@@ -25,14 +25,17 @@ import {
   negativePromptOptions,
 } from './config/index.js';
 import { generatePrompt } from './normalization/index.js';
+import type { LlmOptions } from './normalization/index.js';
 import { loadModelConfig } from './models/index.js';
 import { getSupportedModelIds } from './models/index.js';
+import { loadLlmConfig, createLlmClient } from './llm/index.js';
 import type { RawAnswers } from './cli/index.js';
 import type { GenerationError } from './normalization/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MODELS_DIR = join(__dirname, '..', 'models');
 const DEBUG = process.env.DEBUG === '1' || process.argv.includes('--debug');
+const LLM_ENABLED = process.argv.includes('--llm');
 
 const lookup = {
   type: typeOptions,
@@ -47,6 +50,25 @@ const lookup = {
   cameraLens: cameraLensOptions,
   negativePrompt: negativePromptOptions,
 };
+
+let llmOptions: LlmOptions | undefined;
+
+function initLlmIfEnabled(): void {
+  if (!LLM_ENABLED) return;
+
+  const configResult = loadLlmConfig();
+  if (!configResult.success) {
+    console.error(configResult.error);
+    process.exit(1);
+  }
+
+  const client = createLlmClient(configResult.config);
+  llmOptions = { config: configResult.config, client };
+
+  if (DEBUG) {
+    console.log(`  LLM mode enabled (model: ${configResult.config.model})`);
+  }
+}
 
 async function validateModelsOnStartup(): Promise<void> {
   const modelIds = getSupportedModelIds();
@@ -75,11 +97,11 @@ async function handleRecovery(error: GenerationError, answers: RawAnswers): Prom
     const recovery = await askRecoveryAction({ allowRetry: canRetry(error) });
 
     if (recovery === 'retry-generation') {
-      const retry = await generatePrompt(answers, MODELS_DIR);
+      const retry = await generatePrompt(answers, MODELS_DIR, llmOptions);
       if (retry.success) {
-        printGenerationResult(retry.output);
+        printGenerationResult(retry);
         if (DEBUG) {
-          printDebugOutput(retry.intermediate, retry.output);
+          printDebugOutput(retry);
         }
         return true;
       }
@@ -99,12 +121,12 @@ async function handleRecovery(error: GenerationError, answers: RawAnswers): Prom
 }
 
 async function runGeneration(answers: RawAnswers): Promise<boolean> {
-  const result = await generatePrompt(answers, MODELS_DIR);
+  const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
 
   if (result.success) {
-    printGenerationResult(result.output);
+    printGenerationResult(result);
     if (DEBUG) {
-      printDebugOutput(result.intermediate, result.output);
+      printDebugOutput(result);
     }
     return true;
   }
@@ -113,6 +135,7 @@ async function runGeneration(answers: RawAnswers): Promise<boolean> {
 }
 
 async function main(): Promise<void> {
+  initLlmIfEnabled();
   await validateModelsOnStartup();
 
   let running = true;

@@ -215,20 +215,20 @@ const llmResponseSchema = z.object({
   - response containing metadata or instructions
 
 ### Step 5: Implement `normalizeWithLlm()` Orchestrator
-- [ ] Create `src/llm/normalize.ts`:
+- [X] Create `src/llm/normalize.ts`:
   - Accept `intermediate`, `deterministicPrompt`, `modelConfig`, and `llmConfig`
   - Build system prompt from model template
   - Build user prompt from intermediate + deterministic prompt
   - Call the LLM client
   - Validate the response
   - Return `LlmNormalizationResult`
-- [ ] Implement retry logic:
+- [X] Implement retry logic:
   - On first failure (network error, timeout, or validation rejection), retry once
   - On second failure, return a failure result with the reason
   - The caller decides to fall back to deterministic
-- [ ] Add timeout handling — abort the LLM call if it exceeds `LLM_TIMEOUT_MS`.
-- [ ] Export the function from `src/llm/index.ts`.
-- [ ] Add unit tests with mocked LLM client:
+- [X] Add timeout handling — abort the LLM call if it exceeds `LLM_TIMEOUT_MS`.
+- [X] Export the function from `src/llm/index.ts`.
+- [X] Add unit tests with mocked LLM client:
   - successful normalization
   - first call fails, retry succeeds
   - both calls fail, returns failure result
@@ -236,31 +236,31 @@ const llmResponseSchema = z.object({
   - validation rejection scenario
 
 ### Step 6: Integrate LLM Step into the Generation Pipeline
-- [ ] Update `src/normalization/generate.ts`:
+- [X] Update `src/normalization/generate.ts`:
   - Add an optional `llmConfig` parameter to `generatePrompt()`
   - After `adaptToModel()` succeeds, if `llmConfig` is provided, call `normalizeWithLlm()`
   - On LLM success, replace `output.positivePrompt` with the rewritten version
   - On LLM failure, keep the deterministic prompt and add a warning
   - Add `normalizedBy: 'deterministic' | 'llm'` to the result
-- [ ] Update `GenerationSuccess` type to include `normalizedBy` field.
-- [ ] Update `NormalizedOutput` or add a metadata wrapper for the normalization mode.
-- [ ] Add a new error stage `'llm-normalization'` to `GenerationError` — used only when the pipeline should surface the LLM error instead of silently falling back (e.g., if a strict mode is added later).
-- [ ] Add integration tests for:
+- [X] Update `GenerationSuccess` type to include `normalizedBy` field.
+- [X] Update `NormalizedOutput` or add a metadata wrapper for the normalization mode.
+- [X] Add a new error stage `'llm-normalization'` to `GenerationError` — used only when the pipeline should surface the LLM error instead of silently falling back (e.g., if a strict mode is added later).
+- [X] Add integration tests for:
   - full pipeline with LLM enabled and successful
   - full pipeline with LLM enabled but LLM fails (falls back to deterministic)
   - full pipeline without LLM (unchanged behavior)
 
 ### Step 7: Update the CLI Layer
-- [ ] Update `src/index.ts`:
+- [X] Update `src/index.ts`:
   - Parse the `--llm` flag from `process.argv`
   - When `--llm` is set, load and validate LLM config before entering the interactive flow
   - Pass `llmConfig` into `generatePrompt()`
-- [ ] Update `src/cli/display.ts`:
+- [X] Update `src/cli/display.ts`:
   - Show the normalization mode (`Deterministic` or `LLM`) in the output header
   - When LLM normalization was used, optionally show the original deterministic prompt in debug mode for comparison
-- [ ] Update `src/cli/recovery.ts`:
+- [X] Update `src/cli/recovery.ts`:
   - If LLM normalization fails and falls back, show a brief info message (not an error): `LLM normalization unavailable, using deterministic prompt.`
-- [ ] Add end-to-end tests for:
+- [X] Add end-to-end tests for:
   - CLI run with `--llm` flag and valid API key (mocked)
   - CLI run with `--llm` flag and missing API key (startup error)
   - CLI run without `--llm` flag (unchanged behavior)
@@ -349,9 +349,9 @@ const llmResponseSchema = z.object({
 - [X] Add LLM client dependency and provider abstraction (Step 2)
 - [X] Create per-model LLM system prompt templates (Step 3)
 - [X] Implement response validation (Step 4)
-- [ ] Implement `normalizeWithLlm()` orchestrator (Step 5)
-- [ ] Integrate into generation pipeline (Step 6)
-- [ ] Update CLI layer with `--llm` flag and display changes (Step 7)
+- [X] Implement `normalizeWithLlm()` orchestrator (Step 5)
+- [X] Integrate into generation pipeline (Step 6)
+- [X] Update CLI layer with `--llm` flag and display changes (Step 7)
 - [ ] Write and test the Flux LLM prompt template (Step 8)
 - [ ] Add LLM-specific error handling (Step 9)
 - [ ] Comprehensive testing (Step 10)

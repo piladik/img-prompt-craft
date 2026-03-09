@@ -6,7 +6,7 @@ import {
 } from '../../src/cli/display.js';
 import type { NormalizedOutput } from '../../src/normalization/types.js';
 import type { IntermediatePrompt } from '../../src/domain/schema.js';
-import type { GenerationError } from '../../src/normalization/generate.js';
+import type { GenerationError, GenerationSuccess } from '../../src/normalization/generate.js';
 
 let logged: string[];
 
@@ -35,29 +35,79 @@ const sampleOutputEmpty: NormalizedOutput = {
   height: 1024,
 };
 
+const sampleIntermediate: IntermediatePrompt = {
+  type: 'image',
+  model: 'flux',
+  style: 'cinematic-realism',
+  subject: 'young-woman',
+  scene: 'modern-city-street',
+  mood: 'confident',
+  aspectRatio: '16:9',
+  composition: 'medium-shot',
+  lighting: 'golden-hour-sunlight',
+  cameraLens: '85mm-portrait-lens',
+  negativePrompt: ['blurry'],
+  promptIntent: 'test intent',
+  metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+};
+
+function makeSuccess(overrides?: Partial<GenerationSuccess>): GenerationSuccess {
+  return {
+    success: true,
+    intermediate: sampleIntermediate,
+    output: sampleOutput,
+    normalizedBy: 'deterministic',
+    ...overrides,
+  };
+}
+
 describe('printGenerationResult', () => {
   it('prints positive prompt', () => {
-    printGenerationResult(sampleOutput);
+    printGenerationResult(makeSuccess());
     const output = logged.join('\n');
     expect(output).toContain('Medium shot of a confident young woman');
   });
 
   it('prints negative prompt', () => {
-    printGenerationResult(sampleOutput);
+    printGenerationResult(makeSuccess());
     const output = logged.join('\n');
     expect(output).toContain('blurry, bad anatomy');
   });
 
   it('prints dimensions', () => {
-    printGenerationResult(sampleOutput);
+    printGenerationResult(makeSuccess());
     const output = logged.join('\n');
     expect(output).toContain('1344 × 768');
   });
 
   it('prints None when negative prompt is empty', () => {
-    printGenerationResult(sampleOutputEmpty);
+    printGenerationResult(makeSuccess({ output: sampleOutputEmpty }));
     const output = logged.join('\n');
     expect(output).toContain('None');
+  });
+
+  it('shows Deterministic mode label for deterministic output', () => {
+    printGenerationResult(makeSuccess({ normalizedBy: 'deterministic' }));
+    const output = logged.join('\n');
+    expect(output).toContain('Deterministic');
+  });
+
+  it('shows LLM mode label for LLM-normalized output', () => {
+    printGenerationResult(makeSuccess({ normalizedBy: 'llm' }));
+    const output = logged.join('\n');
+    expect(output).toContain('LLM');
+  });
+
+  it('shows fallback info message when llmWarning is present', () => {
+    printGenerationResult(makeSuccess({ llmWarning: 'Connection refused' }));
+    const output = logged.join('\n');
+    expect(output).toContain('LLM normalization unavailable, using deterministic prompt.');
+  });
+
+  it('does not show fallback message when no llmWarning', () => {
+    printGenerationResult(makeSuccess());
+    const output = logged.join('\n');
+    expect(output).not.toContain('LLM normalization unavailable');
   });
 });
 
@@ -101,25 +151,37 @@ describe('printGenerationError', () => {
 
 describe('printDebugOutput', () => {
   it('prints intermediate schema as JSON', () => {
-    const intermediate: IntermediatePrompt = {
-      type: 'image',
-      model: 'flux',
-      style: 'cinematic-realism',
-      subject: 'young-woman',
-      scene: 'modern-city-street',
-      mood: 'confident',
-      aspectRatio: '16:9',
-      composition: 'medium-shot',
-      lighting: 'golden-hour-sunlight',
-      cameraLens: '85mm-portrait-lens',
-      negativePrompt: ['blurry'],
-      promptIntent: 'test intent',
-      metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
-    };
-    printDebugOutput(intermediate, sampleOutput);
+    printDebugOutput(makeSuccess());
     const output = logged.join('\n');
     expect(output).toContain('"type": "image"');
     expect(output).toContain('"model": "flux"');
     expect(output).toContain('"positivePrompt"');
+  });
+
+  it('shows original deterministic prompt when LLM mode used and prompt provided', () => {
+    const result = makeSuccess({ normalizedBy: 'llm' });
+    printDebugOutput(result, 'Original deterministic prompt here');
+    const output = logged.join('\n');
+    expect(output).toContain('Original Deterministic Prompt');
+    expect(output).toContain('Original deterministic prompt here');
+  });
+
+  it('does not show deterministic prompt section in deterministic mode', () => {
+    printDebugOutput(makeSuccess({ normalizedBy: 'deterministic' }), 'some prompt');
+    const output = logged.join('\n');
+    expect(output).not.toContain('Original Deterministic Prompt');
+  });
+
+  it('shows LLM warning in debug when present', () => {
+    printDebugOutput(makeSuccess({ llmWarning: 'Timeout after 15s' }));
+    const output = logged.join('\n');
+    expect(output).toContain('LLM Warning');
+    expect(output).toContain('Timeout after 15s');
+  });
+
+  it('does not show LLM warning section when no warning', () => {
+    printDebugOutput(makeSuccess());
+    const output = logged.join('\n');
+    expect(output).not.toContain('LLM Warning');
   });
 });
