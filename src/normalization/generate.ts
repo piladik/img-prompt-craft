@@ -4,16 +4,26 @@ import type { IntermediatePrompt } from '../domain/schema.js';
 import { loadModelConfig } from '../models/load-model-config.js';
 import { adaptToModel } from './adapt.js';
 import type { NormalizedOutput } from './types.js';
+import type { LlmClient, LlmConfig } from '../llm/types.js';
+import { normalizeWithLlm } from '../llm/normalize.js';
+
+export interface LlmOptions {
+  config: LlmConfig;
+  client: LlmClient;
+  debug?: boolean;
+}
 
 export interface GenerationSuccess {
   success: true;
   intermediate: IntermediatePrompt;
   output: NormalizedOutput;
+  normalizedBy: 'deterministic' | 'llm';
+  llmWarning?: string;
 }
 
 export interface GenerationError {
   success: false;
-  stage: 'mapping' | 'model-loading' | 'adaptation';
+  stage: 'mapping' | 'model-loading' | 'adaptation' | 'llm-normalization';
   error: string;
   details?: string[];
 }
@@ -23,6 +33,7 @@ export type GenerationResult = GenerationSuccess | GenerationError;
 export async function generatePrompt(
   answers: RawAnswers,
   modelsDir: string,
+  llmOptions?: LlmOptions,
 ): Promise<GenerationResult> {
   const mapped = mapAnswersToSchema(answers);
   if (!mapped.success) {
@@ -43,13 +54,9 @@ export async function generatePrompt(
     };
   }
 
+  let output: NormalizedOutput;
   try {
-    const output = adaptToModel(mapped.data, loaded.config);
-    return {
-      success: true,
-      intermediate: mapped.data,
-      output,
-    };
+    output = adaptToModel(mapped.data, loaded.config);
   } catch (err) {
     return {
       success: false,
@@ -57,4 +64,40 @@ export async function generatePrompt(
       error: err instanceof Error ? err.message : 'Unknown adaptation error',
     };
   }
+
+  if (!llmOptions) {
+    return {
+      success: true,
+      intermediate: mapped.data,
+      output,
+      normalizedBy: 'deterministic',
+    };
+  }
+
+  const llmResult = await normalizeWithLlm(
+    mapped.data,
+    output.positivePrompt,
+    loaded.config,
+    llmOptions.config,
+    llmOptions.client,
+    modelsDir,
+    { debug: llmOptions.debug },
+  );
+
+  if (llmResult.success) {
+    return {
+      success: true,
+      intermediate: mapped.data,
+      output: { ...output, positivePrompt: llmResult.rewrittenPrompt },
+      normalizedBy: 'llm',
+    };
+  }
+
+  return {
+    success: true,
+    intermediate: mapped.data,
+    output,
+    normalizedBy: 'deterministic',
+    llmWarning: llmResult.reason,
+  };
 }
