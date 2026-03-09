@@ -272,12 +272,12 @@
 - [x] Integration test reuse of saved inputs. — deferred (reuse is deferred).
 
 ### Step 12: Document the Feature
-- [ ] Document PostgreSQL setup in `README`.
-- [ ] Document required env vars and an example `.env` snippet.
-- [ ] Document how to run migrations.
-- [ ] Document how storage behaves when the database is unavailable.
-- [ ] Document how history browsing and reuse work.
-- [ ] Document which data is stored and which secrets are not stored.
+- [x] Document PostgreSQL setup in `README`.
+- [x] Document required env vars and an example `.env` snippet.
+- [x] Document how to run migrations.
+- [x] Document how storage behaves when the database is unavailable.
+- [x] Document how history browsing and reuse work. (reuse is deferred)
+- [x] Document which data is stored and which secrets are not stored.
 
 ## Deliverables for Prompt Storage Completion
 - [ ] PostgreSQL-backed prompt history storage

@@ -61,6 +61,55 @@ OPENROUTER_API_KEY=sk-or-v1-your-key-here
 
 The deterministic prompt is always generated first and used as the LLM's input. If the LLM call fails (network error, timeout, rate limit, or invalid response), the CLI silently falls back to the deterministic prompt and shows a brief info message.
 
+### Prompt history (`--history`)
+
+When prompt storage is enabled, every successful generation is automatically saved to a PostgreSQL database. You can browse saved prompts with the `--history` flag:
+
+```bash
+npm run dev -- --history
+```
+
+This opens an interactive list of your recent prompt runs. Select one to view the full detail (selections, positive/negative prompts, dimensions, normalization mode). From the detail view, you can go back to the list or exit.
+
+#### Setting up PostgreSQL storage
+
+Storage is optional. To enable it:
+
+1. Have a PostgreSQL 16+ instance running (local or remote).
+2. Add these variables to your `.env` file:
+
+```
+PROMPT_STORAGE_ENABLED=1
+DATABASE_URL=postgresql://user:password@localhost:5432/comfy_prompts
+```
+
+3. Run the database migrations:
+
+```bash
+npm run migrate
+```
+
+This creates the `prompt_runs` table and required indexes. Migrations are tracked automatically — running the command again is safe and only applies new migrations.
+
+#### Behavior when the database is unavailable
+
+- **During generation:** If storage is enabled but the database is unreachable, the prompt is generated and displayed normally. A one-line warning is printed: `Storage unavailable — prompt not saved`.
+- **During `--history`:** If the database is unreachable, the CLI exits immediately with a clear connection error message.
+
+Storage never blocks or prevents prompt generation.
+
+#### What is stored
+
+Each saved prompt run includes:
+- The selections you made (type, model, style, subject, scene, mood, aspect ratio, composition, lighting, camera lens)
+- The final positive and negative prompts
+- The output dimensions (width × height)
+- Whether the prompt was generated deterministically or with LLM normalization
+- LLM provider and model (when LLM mode was used)
+- App version and a storage schema version for future migrations
+
+**Not stored:** API keys, raw LLM responses, intermediate pipeline data, or failed generations.
+
 ### Environment Variables
 
 | Variable | Required | Default | Description |
@@ -69,6 +118,9 @@ The deterministic prompt is always generated first and used as the LLM's input. 
 | `LLM_MODEL` | No | `openai/gpt-5.4` | Any model available on [OpenRouter](https://openrouter.ai/models) |
 | `LLM_TIMEOUT_MS` | No | `15000` | Max milliseconds to wait for an LLM response |
 | `LLM_MAX_PROMPT_LENGTH` | No | `500` | Max characters for the rewritten prompt |
+| `PROMPT_STORAGE_ENABLED` | No | — | Set to `1` to enable PostgreSQL prompt history |
+| `DATABASE_URL` | When storage is enabled | — | PostgreSQL connection string (`postgresql://user:pass@host:port/db`) |
+| `POSTGRES_CONNECT_TIMEOUT_MS` | No | `5000` | Max milliseconds to wait for a database connection |
 | `DEBUG` | No | `0` | Set to `1` to enable debug output |
 
 ### Debug mode
@@ -157,20 +209,24 @@ The LLM rewrites the positive prompt into flowing natural language while preserv
 
 ```
 src/
-  index.ts              CLI entry point (parses --llm, --debug flags)
+  index.ts              CLI entry point (parses --llm, --debug, --history flags)
   cli/                  Interactive prompts, confirmation, display, recovery
+    history/            History list, detail view, and interactive browsing flow
   config/               Static preset option lists
   domain/               Shared schema, types, prompt intent builder, answer mapper
   llm/                  LLM integration (client, config, normalization, validation)
   models/               Model registry, config loader, config schema
   normalization/        Adapter, generation pipeline, output types
+  storage/              PostgreSQL prompt storage (config, types, schemas, mappers)
+    migrations/         SQL migration files
+    repositories/       Database query modules
 models/
   flux/
     config.json         Flux model definition
     llm-prompt.txt      Flux LLM system prompt template
     example-output.json Documented expected output shape
 tests/
-  unit/                 Schema, presets, mapping, adapter, display, LLM config/client/validation tests
+  unit/                 Schema, presets, mapping, adapter, display, storage, history tests
   integration/          Full pipeline, error scenarios, LLM pipeline and CLI flow tests
 ```
 
@@ -271,12 +327,13 @@ The prompt template and separator in `config.json` control how the model's promp
 | `npm run dev` | Run the CLI in development mode with tsx |
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled CLI |
+| `npm run migrate` | Run pending database migrations |
 | `npm test` | Run all tests |
 | `npm run test:watch` | Run tests in watch mode |
 
 ## Tests
 
-303 tests across 19 test files covering:
+362 tests across 24 test files covering:
 - Preset option lists (counts, duplicates, naming conventions, locked values)
 - Schema validation (valid input, every invalid field, edge cases)
 - Answer-to-schema mapping (trimming, validation errors)
@@ -292,6 +349,11 @@ The prompt template and separator in `config.json` control how the model's promp
 - LLM pipeline integration (with and without LLM, fallback behavior)
 - LLM CLI flow (full end-to-end with mocked provider, startup errors)
 - LLM error handling (debug logging, API key safety)
+- Storage config loading (env parsing, disabled/invalid/valid states, timeout defaults)
+- Storage row decoding (valid rows, invalid fields, summary truncation)
+- Storage insert mapping (deterministic, LLM, provider extraction, fallback)
+- Storage repository (save, list, getById, corrupted-row skipping, mock client)
+- History display formatters (list items, detail view, empty state)
 - Integration tests (every style×subject combo, every option, error scenarios)
 
 ## Troubleshooting
@@ -327,6 +389,34 @@ Check that your `OPENROUTER_API_KEY` is valid and has not expired. Get a new key
 ### LLM mode: response validation failed
 
 The LLM returned a response that didn't pass validation (missing subject reference, contained markdown/metadata, or exceeded the max length). The CLI retries once, then falls back to deterministic. Use `--debug` to see the raw LLM response and the specific validation failure.
+
+### Storage: database connection failed
+
+```
+Storage unavailable — could not connect: ...
+```
+
+Check that PostgreSQL is running and that your `DATABASE_URL` is correct. Verify the host, port, database name, username, and password. To increase the connection timeout:
+
+```
+POSTGRES_CONNECT_TIMEOUT_MS=10000
+```
+
+### Storage: migrations not run
+
+```
+relation "prompt_runs" does not exist
+```
+
+Run `npm run migrate` to create the required database tables before using storage or `--history`.
+
+### Storage: prompt not saved
+
+```
+Storage unavailable — prompt not saved: ...
+```
+
+The prompt was generated successfully but could not be saved to the database. This does not affect the generated output. Check your database connection and ensure migrations have been run.
 
 ## License
 
