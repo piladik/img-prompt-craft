@@ -80,7 +80,7 @@ Storage is optional. To enable it:
 
 ```
 PROMPT_STORAGE_ENABLED=1
-DATABASE_URL=postgresql://user:password@localhost:5432/comfy_prompts
+DATABASE_URL=postgresql://user:password@localhost:5432/img_promt_craft
 ```
 
 3. Run the database migrations:
