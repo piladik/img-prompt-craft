@@ -11,4 +11,4 @@ export { mapToPromptRunInsert } from './mappers.js';
 export type { MapToInsertOptions } from './mappers.js';
 export { createClient } from './connection.js';
 export { savePromptRun, listRecentPromptRuns, getPromptRunById } from './repositories/prompt-runs.js';
-export type { StorageResult, StorageSuccess, StorageError } from './repositories/prompt-runs.js';
+export type { StorageResult, StorageSuccess, StorageError, ListResult, SkippedRow } from './repositories/prompt-runs.js';

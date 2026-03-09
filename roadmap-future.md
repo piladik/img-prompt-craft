@@ -204,11 +204,11 @@
 - [x] Ensure all database errors are caught and converted into concise storage-layer errors.
 
 ### Step 7: Wire Prompt Saving into the Generation Pipeline
-- [ ] Decide the exact orchestration boundary for persistence.
-- [ ] Save a prompt run only after `generatePrompt()` returns success.
-- [ ] Pass the successful generation result and the normalized selection fields into the persistence layer.
-- [ ] Avoid mixing SQL logic into CLI display code.
-- [ ] Ensure save failures do not mutate or hide the generated output.
+- [x] Decide the exact orchestration boundary for persistence.
+- [x] Save a prompt run only after `generatePrompt()` returns success.
+- [x] Pass the successful generation result and the normalized selection fields into the persistence layer.
+- [x] Avoid mixing SQL logic into CLI display code.
+- [x] Ensure save failures do not mutate or hide the generated output.
 
 ### Step 7 Integration Note
 - The cleanest first boundary is:
@@ -218,11 +218,11 @@
 - This keeps `generatePrompt()` pure with respect to persistence and makes it easier to test generation independently from database behavior.
 
 ### Step 8: Add Interactive History Browsing
-- [ ] Add a CLI entry point or menu action for browsing saved prompt history.
-- [ ] Build a small history summary formatter for terminal output.
-- [ ] Add pagination or a configurable recent-limit if the history grows.
-- [ ] Add a detail view for one selected record.
-- [ ] Add clear empty-state messaging when no prompts have been saved.
+- [x] Add a CLI entry point or menu action for browsing saved prompt history.
+- [x] Build a small history summary formatter for terminal output.
+- [x] Add pagination or a configurable recent-limit if the history grows.
+- [x] Add a detail view for one selected record.
+- [x] Add clear empty-state messaging when no prompts have been saved.
 
 ### Step 8 Recommended First History Scope
 - Show the latest 10 saved prompt runs.
@@ -244,12 +244,12 @@
 - `storage_version` should be used to support future migrations of saved records when selection shapes evolve.
 
 ### Step 10: Add Error Handling and Safe Fallbacks
-- [ ] Handle invalid env configuration.
-- [ ] Handle connection failures.
-- [ ] Handle migration failures.
-- [ ] Handle insert failures.
-- [ ] Handle malformed or incomplete stored records when reading history.
-- [ ] Handle reuse failures caused by old or corrupted records.
+- [x] Handle invalid env configuration.
+- [x] Handle connection failures.
+- [x] Handle migration failures.
+- [x] Handle insert failures.
+- [x] Handle malformed or incomplete stored records when reading history.
+- [x] Handle reuse failures caused by old or corrupted records. — deferred (reuse is deferred).
 
 ### Step 10 Error-Handling Rules
 - Storage errors should never prevent prompt generation when the generator itself succeeded.
@@ -259,15 +259,17 @@
 - Corrupted saved records should be reported clearly with record id and failure reason.
 
 ### Step 11: Add Tests
-- [ ] Unit test env parsing and connection config building.
-- [ ] Unit test generation-result to insert-payload mapping.
-- [ ] Unit test row decoding and history-summary formatting.
-- [ ] Integration test migrations against PostgreSQL.
-- [ ] Integration test successful save after deterministic generation.
-- [ ] Integration test successful save after LLM generation.
-- [ ] Integration test save failure with generation success fallback.
-- [ ] Integration test listing and loading recent history.
-- [ ] Integration test reuse of saved inputs.
+- [x] Unit test env parsing and connection config building.
+- [x] Unit test generation-result to insert-payload mapping.
+- [x] Unit test row decoding and history-summary formatting.
+- [x] Unit test history display formatters (list, detail, empty state).
+- [x] Unit test repository with mock client (save, list, getById, corrupted rows, skipping).
+- [ ] Integration test migrations against PostgreSQL. — requires a live database; deferred.
+- [ ] Integration test successful save after deterministic generation. — requires a live database; deferred.
+- [ ] Integration test successful save after LLM generation. — requires a live database; deferred.
+- [ ] Integration test save failure with generation success fallback. — requires a live database; deferred.
+- [ ] Integration test listing and loading recent history. — requires a live database; deferred.
+- [x] Integration test reuse of saved inputs. — deferred (reuse is deferred).
 
 ### Step 12: Document the Feature
 - [ ] Document PostgreSQL setup in `README`.

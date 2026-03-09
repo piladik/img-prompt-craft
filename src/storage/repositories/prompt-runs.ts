@@ -14,6 +14,17 @@ export interface StorageError {
 
 export type StorageResult<T> = StorageSuccess<T> | StorageError;
 
+export interface SkippedRow {
+  index: number;
+  id: string | undefined;
+  reason: string;
+}
+
+export interface ListResult {
+  summaries: PromptRunSummary[];
+  skipped: SkippedRow[];
+}
+
 const DEFAULT_RECENT_LIMIT = 10;
 
 function toStorageError(err: unknown): StorageError {
@@ -78,7 +89,7 @@ export async function savePromptRun(
 export async function listRecentPromptRuns(
   client: pg.Client,
   limit: number = DEFAULT_RECENT_LIMIT,
-): Promise<StorageResult<PromptRunSummary[]>> {
+): Promise<StorageResult<ListResult>> {
   const sql = `
     SELECT * FROM prompt_runs
     ORDER BY created_at DESC
@@ -87,8 +98,19 @@ export async function listRecentPromptRuns(
 
   try {
     const result = await client.query(sql, [limit]);
-    const summaries = result.rows.map((row) => decodePromptRunSummary(row));
-    return { success: true, data: summaries };
+    const summaries: PromptRunSummary[] = [];
+    const skipped: SkippedRow[] = [];
+
+    for (let i = 0; i < result.rows.length; i++) {
+      try {
+        summaries.push(decodePromptRunSummary(result.rows[i]));
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        skipped.push({ index: i, id: result.rows[i]?.id, reason });
+      }
+    }
+
+    return { success: true, data: { summaries, skipped } };
   } catch (err) {
     return toStorageError(err);
   }
@@ -108,6 +130,8 @@ export async function getPromptRunById(
     const row = decodePromptRunRow(result.rows[0]);
     return { success: true, data: row };
   } catch (err) {
-    return toStorageError(err);
+    const rawId = typeof id === 'string' ? id : 'unknown';
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Record ${rawId}: ${message}` };
   }
 }
