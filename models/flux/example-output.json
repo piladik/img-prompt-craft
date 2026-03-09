@@ -1,0 +1,22 @@
+{
+  "description": "Example of the final output produced by the Flux model adapter. This file documents the expected shape for testing and onboarding.",
+  "input": {
+    "type": "image",
+    "model": "flux",
+    "style": "cinematic-realism",
+    "subject": "young-woman",
+    "scene": "modern-city-street",
+    "mood": "confident",
+    "aspectRatio": "16:9",
+    "composition": "medium-shot",
+    "lighting": "golden-hour-sunlight",
+    "cameraLens": "85mm-portrait-lens",
+    "negativePrompt": ["blurry", "bad-anatomy", "deformed-hands"]
+  },
+  "output": {
+    "positivePrompt": "Medium shot of a confident young woman, modern city street, golden hour sunlight, shot on 85mm portrait lens, cinematic realism",
+    "negativePrompt": "blurry, bad anatomy, deformed hands",
+    "width": 1344,
+    "height": 768
+  }
+}
