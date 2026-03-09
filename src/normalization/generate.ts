@@ -10,6 +10,7 @@ import { normalizeWithLlm } from '../llm/normalize.js';
 export interface LlmOptions {
   config: LlmConfig;
   client: LlmClient;
+  debug?: boolean;
 }
 
 export interface GenerationSuccess {
@@ -80,6 +81,7 @@ export async function generatePrompt(
     llmOptions.config,
     llmOptions.client,
     modelsDir,
+    { debug: llmOptions.debug },
   );
 
   if (llmResult.success) {

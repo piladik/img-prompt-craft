@@ -10,6 +10,10 @@ Rules:
 - Preserve ALL details from the original: subject, scene, mood, style, composition, lighting, and camera lens.
 - Do NOT add subjects, objects, or scene elements that are not present in the original.
 - Do NOT include negative prompt instructions in the positive prompt.
-- Write as a single flowing description, not a comma-separated tag list.
+- Write as a single flowing paragraph of descriptive prose, as if narrating a cinematic photograph.
+- Avoid comma-separated tag lists; {model.label} responds best to natural sentences.
+- Use vivid, sensory language to describe lighting quality, texture, and atmosphere.
+- Place the subject and their action or pose at the beginning of the description.
+- Weave composition and camera lens details naturally into the description rather than listing them.
 - Keep the output under {maxLength} characters.
 - Return ONLY the rewritten prompt text, no explanations or metadata.

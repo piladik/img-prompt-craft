@@ -63,7 +63,7 @@ function initLlmIfEnabled(): void {
   }
 
   const client = createLlmClient(configResult.config);
-  llmOptions = { config: configResult.config, client };
+  llmOptions = { config: configResult.config, client, debug: DEBUG };
 
   if (DEBUG) {
     console.log(`  LLM mode enabled (model: ${configResult.config.model})`);

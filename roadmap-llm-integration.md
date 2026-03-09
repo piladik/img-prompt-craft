@@ -266,57 +266,57 @@ const llmResponseSchema = z.object({
   - CLI run without `--llm` flag (unchanged behavior)
 
 ### Step 8: Create Flux LLM Prompt Template
-- [ ] Write `models/flux/llm-prompt.txt` with Flux-specific rewriting instructions:
+- [X] Write `models/flux/llm-prompt.txt` with Flux-specific rewriting instructions:
   - Reference Flux's natural-language preference
   - Instruct the LLM to write as flowing prose, not tag lists
   - Emphasize preserving all user-selected details
   - Include character limit instruction
-- [ ] Test the template with real LLM calls against a few representative user selections.
-- [ ] Iterate on wording based on output quality.
-- [ ] Document the template format and available placeholders in the model file documentation section.
+- [X] Test the template with real LLM calls against a few representative user selections.
+- [X] Iterate on wording based on output quality.
+- [X] Document the template format and available placeholders in the model file documentation section.
 
 ### Step 9: Add Error Handling for LLM-Specific Failures
-- [ ] Handle missing API key at startup with a clear message and non-zero exit.
-- [ ] Handle network errors (DNS, connection refused) with a concise message and fallback.
-- [ ] Handle rate limiting (HTTP 429) with a message suggesting the user wait or switch to deterministic mode.
-- [ ] Handle malformed LLM responses (not a string, contains JSON, etc.) with validation and fallback.
-- [ ] Handle timeout with a configurable threshold and fallback.
-- [ ] In debug mode, print the full LLM request and response for diagnostics.
-- [ ] Never print API keys or auth headers in any mode.
+- [X] Handle missing API key at startup with a clear message and non-zero exit.
+- [X] Handle network errors (DNS, connection refused) with a concise message and fallback.
+- [X] Handle rate limiting (HTTP 429) with a message suggesting the user wait or switch to deterministic mode.
+- [X] Handle malformed LLM responses (not a string, contains JSON, etc.) with validation and fallback.
+- [X] Handle timeout with a configurable threshold and fallback.
+- [X] In debug mode, print the full LLM request and response for diagnostics.
+- [X] Never print API keys or auth headers in any mode.
 
 ### Step 10: Test the LLM Integration Thoroughly
-- [ ] Unit test LLM config loading (all env var combinations).
-- [ ] Unit test LLM client abstraction (mocked HTTP calls).
-- [ ] Unit test system prompt building for all supported models.
-- [ ] Unit test user prompt building with different intermediate schemas.
-- [ ] Unit test response validation (all passing and failing cases).
-- [ ] Unit test `normalizeWithLlm()` orchestrator (success, retry, timeout, validation failure).
-- [ ] Unit test pipeline integration (with and without LLM config).
-- [ ] Integration test full CLI flow with mocked LLM provider.
-- [ ] Integration test fallback behavior when LLM is unavailable.
-- [ ] Manual test with real OpenRouter API key to validate prompt quality.
+- [X] Unit test LLM config loading (all env var combinations).
+- [X] Unit test LLM client abstraction (mocked HTTP calls).
+- [X] Unit test system prompt building for all supported models.
+- [X] Unit test user prompt building with different intermediate schemas.
+- [X] Unit test response validation (all passing and failing cases).
+- [X] Unit test `normalizeWithLlm()` orchestrator (success, retry, timeout, validation failure).
+- [X] Unit test pipeline integration (with and without LLM config).
+- [X] Integration test full CLI flow with mocked LLM provider.
+- [X] Integration test fallback behavior when LLM is unavailable.
+- [X] Manual test with real OpenRouter API key to validate prompt quality.
 
 ### Step 11: Update Documentation
-- [ ] Update `README.md`:
+- [X] Update `README.md`:
   - Add LLM normalization section explaining the feature and how to enable it
   - Document required environment variables (`OPENROUTER_API_KEY`, `LLM_MODEL`, etc.)
   - Add example output showing LLM-enhanced prompt vs deterministic prompt
   - Update the scripts table if new scripts are added
   - Update test count
-- [ ] Document the per-model `llm-prompt.txt` template format in the model file structure section.
-- [ ] Document how to add LLM support for a new model.
-- [ ] Add a troubleshooting section for common LLM issues (missing key, timeout, rate limiting).
+- [X] Document the per-model `llm-prompt.txt` template format in the model file structure section.
+- [X] Document how to add LLM support for a new model.
+- [X] Add a troubleshooting section for common LLM issues (missing key, timeout, rate limiting).
 
 ## Deliverables for LLM Integration Completion
-- [ ] A `--llm` CLI flag that enables LLM-powered prompt normalization
-- [ ] OpenRouter integration using the `openai` SDK with `gpt-5.4` as the default model
-- [ ] Per-model LLM system prompt templates (starting with Flux)
-- [ ] Zod-validated LLM response handling with subject-preservation checks
-- [ ] Retry logic (1 retry) with automatic fallback to deterministic output
-- [ ] Startup validation for `OPENROUTER_API_KEY` when LLM mode is requested
-- [ ] `normalizedBy` metadata indicating which normalization path was used
-- [ ] Comprehensive tests with mocked LLM calls
-- [ ] Updated README with setup instructions and examples
+- [X] A `--llm` CLI flag that enables LLM-powered prompt normalization
+- [X] OpenRouter integration using the `openai` SDK with `gpt-5.4` as the default model
+- [X] Per-model LLM system prompt templates (starting with Flux)
+- [X] Zod-validated LLM response handling with subject-preservation checks
+- [X] Retry logic (1 retry) with automatic fallback to deterministic output
+- [X] Startup validation for `OPENROUTER_API_KEY` when LLM mode is requested
+- [X] `normalizedBy` metadata indicating which normalization path was used
+- [X] Comprehensive tests with mocked LLM calls
+- [X] Updated README with setup instructions and examples
 
 ## Risks and Decisions to Resolve Early
 - [X] Decide whether `openai/gpt-5.4` provides the best cost-to-quality ratio through OpenRouter, or whether a different model should be the default.
@@ -352,7 +352,7 @@ const llmResponseSchema = z.object({
 - [X] Implement `normalizeWithLlm()` orchestrator (Step 5)
 - [X] Integrate into generation pipeline (Step 6)
 - [X] Update CLI layer with `--llm` flag and display changes (Step 7)
-- [ ] Write and test the Flux LLM prompt template (Step 8)
-- [ ] Add LLM-specific error handling (Step 9)
-- [ ] Comprehensive testing (Step 10)
-- [ ] Update documentation (Step 11)
+- [X] Write and test the Flux LLM prompt template (Step 8)
+- [X] Add LLM-specific error handling (Step 9)
+- [X] Comprehensive testing (Step 10)
+- [X] Update documentation (Step 11)
