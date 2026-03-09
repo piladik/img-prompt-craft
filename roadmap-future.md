@@ -115,87 +115,76 @@
 ## Step-by-Step Plan
 
 ### Step 1: Lock Product Decisions
-- [ ] Confirm that PostgreSQL is the only supported storage backend for v1.
-- [ ] Confirm that storage remains optional and disabled unless database env vars are present.
-- [ ] Confirm whether successful generations should auto-save by default or ask for confirmation after each run.
-- [ ] Confirm whether the first history view is interactive-only, command-based, or both.
-- [ ] Confirm whether reuse should prefill the flow silently or show a review screen first.
-- [ ] Confirm whether deterministic and LLM-generated results are both stored with the same table shape.
+- [x] Confirm that PostgreSQL is the only supported storage backend for v1.
+- [x] Confirm that storage remains optional and disabled unless database env vars are present.
+- [x] Confirm whether successful generations should auto-save by default or ask for confirmation after each run.
+- [x] Confirm whether the first history view is interactive-only, command-based, or both.
+- [x] Confirm whether reuse should prefill the flow silently or show a review screen first.
+- [x] Confirm whether deterministic and LLM-generated results are both stored with the same table shape.
 
-### Step 1 Recommended Decisions
+### Step 1 Locked Decisions
 - PostgreSQL is the only storage backend in v1.
 - Storage is optional and enabled only when required env vars are configured.
 - Successful generations auto-save when storage is enabled to avoid interrupting the normal CLI flow.
-- The first history experience is an interactive menu reached from the CLI, not a large set of flags.
+- History is accessed via an interactive menu launched with the `--history` flag. The flag opens the history flow; within it, navigation is interactive (list, detail, reuse).
 - Reuse should show a confirmation screen before launching a new generation.
 - Deterministic and LLM results share one table shape; `normalized_by`, `llm_provider`, `llm_model`, and `llm_warning` capture the differences.
 
 ### Step 2: Define the Storage User Flow
-- [ ] Decide where storage appears in the existing CLI flow.
-- [ ] Decide how users access saved history.
-- [ ] Decide how detailed records are displayed in the terminal.
-- [ ] Decide how reuse of a saved prompt run restarts generation.
-- [ ] Define behavior when storage is unavailable, misconfigured, or temporarily down.
+- [x] Decide where storage appears in the existing CLI flow.
+- [x] Decide how users access saved history.
+- [x] Decide how detailed records are displayed in the terminal.
+- [x] Decide how reuse of a saved prompt run restarts generation. — deferred, not needed for v1.
+- [x] Define behavior when storage is unavailable, misconfigured, or temporarily down.
 
-### Step 2 Recommended Flow
-- After a successful generation, the CLI saves the prompt run automatically when storage is enabled.
-- After saving, the final action prompt can offer:
-  - `generate-again`
-  - `view-recent-history`
-  - `exit`
-- `view-recent-history` shows the most recent saved prompt runs with concise labels:
-  - created timestamp
-  - model
-  - normalization mode
-  - short positive-prompt preview
-- Selecting one record shows a detail view with:
-  - saved selections summary
-  - positive prompt
-  - negative prompt
-  - dimensions
-  - normalized mode
-  - optional LLM warning
+### Step 2 Locked Flow
+- Two touch-points for storage in the CLI:
+  - (a) After a successful generation, the result is auto-saved before the post-generation menu appears.
+  - (b) History browsing is a separate entry point triggered by the `--history` flag, bypassing the generation flow entirely.
+- The `--history` flag enters an interactive list of recent prompt runs. No history access from within the normal generation loop.
+- The post-generation menu stays as-is: `generate-again` / `exit`.
+- List view: one line per record — timestamp, model, normalization mode, truncated positive-prompt preview.
+- Detail view: full positive prompt, negative prompt, dimensions, normalization mode, LLM warning if present, and saved selection summary.
 - The detail view offers:
-  - `reuse-inputs`
   - `back-to-history`
   - `exit`
-- `reuse-inputs` rebuilds the generation inputs from the stored selection columns, shows a confirmation screen, then starts a new generation using those inputs as the base.
+- Reuse from saved inputs is deferred to a future version.
+- If `PROMPT_STORAGE_ENABLED=1` but the database is unreachable:
+  - Generation works normally; a one-line warning is printed after the result ("Storage unavailable — prompt not saved").
+  - `--history` exits immediately with a clear connection-error message.
 
 ### Step 3: Define the Database Connection Contract
-- [ ] Add storage env vars.
-- [ ] Validate env vars with `zod`.
-- [ ] Decide connection pooling strategy for a short-lived CLI process.
-- [ ] Decide startup behavior if storage is enabled but the database is unreachable.
+- [x] Add storage env vars.
+- [x] Validate env vars with `zod`.
+- [x] Decide connection pooling strategy for a short-lived CLI process.
+- [x] Decide startup behavior if storage is enabled but the database is unreachable.
 
-### Step 3 Recommended Env Vars
-- `POSTGRES_HOST`
-- `POSTGRES_PORT`
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_SSL`
-- `POSTGRES_CONNECT_TIMEOUT_MS`
-- `PROMPT_STORAGE_ENABLED`
+### Step 3 Locked Env Vars
+- `PROMPT_STORAGE_ENABLED` — set to `1` to enable storage.
+- `DATABASE_URL` — standard PostgreSQL connection string (`postgresql://user:pass@host:port/db?sslmode=...`).
+- `POSTGRES_CONNECT_TIMEOUT_MS` — optional, defaults to 5000ms.
 
-### Step 3 Decisions
-- `PROMPT_STORAGE_ENABLED=1` enables storage only when all required PostgreSQL variables are valid.
-- Connection config is parsed once at startup.
-- The CLI should test the database connection lazily on the first storage action, not block every startup when storage is disabled.
-- If storage is enabled but the database is unreachable, generation still works and the CLI prints a concise persistence warning.
+### Step 3 Locked Decisions
+- `PROMPT_STORAGE_ENABLED=1` enables storage only when `DATABASE_URL` is also valid.
+- A `loadStorageConfig()` function validates env vars with `zod` and returns a discriminated `success`/`error` result, following the existing `loadLlmConfig` pattern.
+- Use a single `pg.Client` (not a pool) since the CLI is short-lived and makes at most 1–2 queries per run.
+- Config is parsed at startup (validate env vars). The actual database connection is deferred to the first storage action.
+- If storage is enabled but the database is unreachable at save time, generation succeeds and a one-line warning is printed.
+- If `--history` can't connect, exit immediately with a clear connection-error message.
 
 ### Step 4: Create the Storage Types and Schemas
-- [ ] Add TypeScript types for storage config, insert payloads, row shapes, and history summaries.
-- [ ] Add `zod` schemas for env parsing.
-- [ ] Add `zod` schemas for decoding database rows into typed history records.
-- [ ] Define helper mappers from `GenerationSuccess` plus the validated prompt selections into a storage insert object.
-- [ ] Add tests for valid and invalid row decoding.
+- [x] Add TypeScript types for storage config, insert payloads, row shapes, and history summaries.
+- [x] Add `zod` schemas for env parsing.
+- [x] Add `zod` schemas for decoding database rows into typed history records.
+- [x] Define helper mappers from `GenerationSuccess` plus the validated prompt selections into a storage insert object.
+- [x] Add tests for valid and invalid row decoding.
 
 ### Step 5: Create the Initial Database Schema
-- [ ] Write the first SQL migration for `prompt_runs`.
-- [ ] Add indexes for common history queries.
-- [ ] Add a migration table to track applied migrations.
-- [ ] Create a migration runner that applies pending SQL files in order.
-- [ ] Add a safe startup or manual command for running migrations locally.
+- [x] Write the first SQL migration for `prompt_runs`.
+- [x] Add indexes for common history queries.
+- [x] Add a migration table to track applied migrations.
+- [x] Create a migration runner that applies pending SQL files in order.
+- [x] Add a safe startup or manual command for running migrations locally.
 
 ### Step 5 Suggested SQL Constraints
 - `normalized_by` limited to `deterministic` and `llm`
@@ -205,14 +194,14 @@
 - nullable LLM metadata columns allowed only when they add value to the saved record
 
 ### Step 6: Build the Database Access Layer
-- [ ] Create a connection factory that returns a configured PostgreSQL client or pool.
-- [ ] Keep SQL execution helpers separate from query mapping logic.
-- [ ] Add a prompt-run repository with focused methods:
+- [x] Create a connection factory that returns a configured PostgreSQL client or pool.
+- [x] Keep SQL execution helpers separate from query mapping logic.
+- [x] Add a prompt-run repository with focused methods:
   - `savePromptRun()`
   - `listRecentPromptRuns()`
   - `getPromptRunById()`
-- [ ] Return narrow result types and actionable errors.
-- [ ] Ensure all database errors are caught and converted into concise storage-layer errors.
+- [x] Return narrow result types and actionable errors.
+- [x] Ensure all database errors are caught and converted into concise storage-layer errors.
 
 ### Step 7: Wire Prompt Saving into the Generation Pipeline
 - [ ] Decide the exact orchestration boundary for persistence.

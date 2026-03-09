@@ -13,7 +13,9 @@
   "scripts": {
     "dev": "tsx --env-file=.env src/index.ts",
     "build": "tsc",
+    "postbuild": "node -e \"require('fs').cpSync('src/storage/migrations','dist/storage/migrations',{recursive:true})\"",
     "start": "node --env-file=.env dist/index.js",
+    "migrate": "tsx --env-file=.env src/storage/run-migrations.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -28,11 +30,13 @@
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",
     "openai": "^6.27.0",
+    "pg": "^8.20.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.3.5",
+    "@types/pg": "^8.18.0",
     "eslint": "^10.0.3",
     "prettier": "^3.8.1",
     "tsx": "^4.21.0",
