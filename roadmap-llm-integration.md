@@ -173,41 +173,41 @@ const llmResponseSchema = z.object({
 - Maximum LLM call latency before timeout: 15 seconds (`LLM_TIMEOUT_MS` defaults to `15000`). This is generous enough for longer model responses through OpenRouter while keeping the CLI responsive.
 
 ### Step 2: Add LLM Client Dependency and OpenRouter Integration
-- [ ] Install `openai` npm package (used as the HTTP client — OpenRouter exposes an OpenAI-compatible API).
-- [ ] Create `src/llm/types.ts` with shared types:
+- [X] Install `openai` npm package (used as the HTTP client — OpenRouter exposes an OpenAI-compatible API).
+- [X] Create `src/llm/types.ts` with shared types:
   - `LlmConfig` interface (apiKey, model, baseUrl, timeout, maxPromptLength)
   - `LlmNormalizationResult` — success with rewritten prompt or failure with reason
-- [ ] Create `src/llm/config.ts`:
+- [X] Create `src/llm/config.ts`:
   - Load config from env vars (`OPENROUTER_API_KEY`, `LLM_MODEL`, etc.)
   - Set `baseUrl` to `https://openrouter.ai/api/v1`
   - Set default model to `openai/gpt-5.4`
   - Validate that `OPENROUTER_API_KEY` is present
   - Return typed `LlmConfig` or validation error
-- [ ] Create `src/llm/client.ts`:
+- [X] Create `src/llm/client.ts`:
   - Define `LlmClient` interface with a single `complete(systemPrompt, userPrompt)` method
   - Implement `OpenRouterClient` class using the `openai` package configured with OpenRouter's base URL and the `HTTP-Referer` / `X-Title` headers recommended by OpenRouter
   - Implement a `createLlmClient(config)` factory function
-- [ ] Add unit tests for config loading (valid, missing key, custom model override).
+- [X] Add unit tests for config loading (valid, missing key, custom model override).
 
 ### Step 3: Create Per-Model LLM System Prompt Templates
-- [ ] Create `models/flux/llm-prompt.txt` with the system prompt template for Flux.
-- [ ] Define placeholder syntax for the template: `{model.label}`, `{model.promptGuidance}`, `{maxLength}`.
-- [ ] Create `src/llm/build-system-prompt.ts`:
+- [X] Create `models/flux/llm-prompt.txt` with the system prompt template for Flux.
+- [X] Define placeholder syntax for the template: `{model.label}`, `{model.promptGuidance}`, `{maxLength}`.
+- [X] Create `src/llm/build-system-prompt.ts`:
   - Load the template file for the selected model
   - Fill in placeholders from `ModelConfig` and `LlmConfig`
   - Return the assembled system prompt string
-- [ ] Create the user prompt builder that formats the deterministic prompt + user selections.
-- [ ] Add unit tests for system prompt building with different model configs.
-- [ ] Add unit tests for user prompt building.
+- [X] Create the user prompt builder that formats the deterministic prompt + user selections.
+- [X] Add unit tests for system prompt building with different model configs.
+- [X] Add unit tests for user prompt building.
 
 ### Step 4: Implement LLM Response Validation
-- [ ] Create `src/llm/response-validation.ts`:
+- [X] Create `src/llm/response-validation.ts`:
   - Define a zod schema for the expected LLM response shape
   - Implement `containsSubject` refinement — check that at least one keyword from the subject selection appears in the response
   - Implement `noMetadata` refinement — reject responses with markdown, instructions, or quoted blocks
   - Export a `validateLlmResponse(response, intermediate)` function
-- [ ] Return typed validation results (success with cleaned string, or failure with reason).
-- [ ] Add unit tests for:
+- [X] Return typed validation results (success with cleaned string, or failure with reason).
+- [X] Add unit tests for:
   - valid response
   - empty response
   - response exceeding max length
@@ -345,10 +345,10 @@ const llmResponseSchema = z.object({
 - Model comparison mode — run the same prompt through multiple OpenRouter models and compare results
 
 ## Suggested Implementation Order
-- [ ] Lock product decisions and confirm scope (Step 1)
-- [ ] Add LLM client dependency and provider abstraction (Step 2)
-- [ ] Create per-model LLM system prompt templates (Step 3)
-- [ ] Implement response validation (Step 4)
+- [X] Lock product decisions and confirm scope (Step 1)
+- [X] Add LLM client dependency and provider abstraction (Step 2)
+- [X] Create per-model LLM system prompt templates (Step 3)
+- [X] Implement response validation (Step 4)
 - [ ] Implement `normalizeWithLlm()` orchestrator (Step 5)
 - [ ] Integrate into generation pipeline (Step 6)
 - [ ] Update CLI layer with `--llm` flag and display changes (Step 7)
