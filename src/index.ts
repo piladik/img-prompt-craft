@@ -2,6 +2,7 @@
 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import pg from 'pg';
 import {
   collectAnswers,
   askConfirmation,
@@ -30,12 +31,22 @@ import { loadModelConfig } from './models/index.js';
 import { getSupportedModelIds } from './models/index.js';
 import { loadLlmConfig, createLlmClient } from './llm/index.js';
 import type { RawAnswers } from './cli/index.js';
-import type { GenerationError } from './normalization/index.js';
+import type { GenerationError, GenerationSuccess } from './normalization/index.js';
+import {
+  loadStorageConfig,
+  createClient,
+  mapToPromptRunInsert,
+  savePromptRun,
+} from './storage/index.js';
+import type { StorageConfig } from './storage/index.js';
+import { runHistoryFlow } from './cli/history/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MODELS_DIR = join(__dirname, '..', 'models');
+const APP_VERSION = '0.1.0';
 const DEBUG = process.env.DEBUG === '1' || process.argv.includes('--debug');
 const LLM_ENABLED = process.argv.includes('--llm');
+const HISTORY_MODE = process.argv.includes('--history');
 
 const lookup = {
   type: typeOptions,
@@ -52,6 +63,8 @@ const lookup = {
 };
 
 let llmOptions: LlmOptions | undefined;
+let storageConfig: StorageConfig | undefined;
+let storageClient: pg.Client | undefined;
 
 function initLlmIfEnabled(): void {
   if (!LLM_ENABLED) return;
@@ -67,6 +80,78 @@ function initLlmIfEnabled(): void {
 
   if (DEBUG) {
     console.log(`  LLM mode enabled (model: ${configResult.config.model})`);
+  }
+}
+
+function initStorageConfig(): void {
+  const result = loadStorageConfig();
+
+  if (!result.success) {
+    if (result.reason === 'invalid') {
+      console.error(result.error);
+      process.exit(1);
+    }
+    if (DEBUG) {
+      console.log('  Storage disabled (PROMPT_STORAGE_ENABLED is not set to 1).');
+    }
+    return;
+  }
+
+  storageConfig = result.config;
+
+  if (DEBUG) {
+    console.log('  Storage enabled.');
+  }
+}
+
+async function getStorageClient(): Promise<pg.Client | null> {
+  if (!storageConfig) return null;
+
+  if (storageClient) return storageClient;
+
+  const client = createClient(storageConfig);
+  try {
+    await client.connect();
+    storageClient = client;
+    return storageClient;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(`  Storage unavailable — could not connect: ${message}`);
+    if (DEBUG) {
+      console.log(`  Connection string host: ${new URL(storageConfig.databaseUrl).hostname}`);
+    }
+    return null;
+  }
+}
+
+function resetStorageClient(): void {
+  storageClient = undefined;
+}
+
+async function trySavePromptRun(answers: RawAnswers, result: GenerationSuccess): Promise<void> {
+  const client = await getStorageClient();
+  if (!client) return;
+
+  const insert = mapToPromptRunInsert({
+    answers,
+    result,
+    appVersion: APP_VERSION,
+    llmConfig: llmOptions?.config,
+  });
+
+  const saveResult = await savePromptRun(client, insert);
+
+  if (!saveResult.success) {
+    console.log(`  Storage unavailable — prompt not saved: ${saveResult.error}`);
+    if (DEBUG) {
+      console.log(`  Save failed for model="${insert.model}", normalizedBy="${insert.normalizedBy}".`);
+    }
+    resetStorageClient();
+    return;
+  }
+
+  if (DEBUG) {
+    console.log(`  Prompt saved (id: ${saveResult.data.id}).`);
   }
 }
 
@@ -89,7 +174,10 @@ function canRetry(error: GenerationError): boolean {
   return error.stage !== 'mapping';
 }
 
-async function handleRecovery(error: GenerationError, answers: RawAnswers): Promise<boolean> {
+async function handleRecovery(
+  error: GenerationError,
+  answers: RawAnswers,
+): Promise<GenerationSuccess | null> {
   printGenerationError(error);
 
   let recovering = true;
@@ -103,7 +191,7 @@ async function handleRecovery(error: GenerationError, answers: RawAnswers): Prom
         if (DEBUG) {
           printDebugOutput(retry);
         }
-        return true;
+        return retry;
       }
       error = retry;
       printGenerationError(retry);
@@ -111,16 +199,16 @@ async function handleRecovery(error: GenerationError, answers: RawAnswers): Prom
     }
 
     if (recovery === 'restart-flow') {
-      return false;
+      return null;
     }
 
     process.exit(1);
   }
 
-  return false;
+  return null;
 }
 
-async function runGeneration(answers: RawAnswers): Promise<boolean> {
+async function runGeneration(answers: RawAnswers): Promise<GenerationSuccess | null> {
   const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
 
   if (result.success) {
@@ -128,14 +216,38 @@ async function runGeneration(answers: RawAnswers): Promise<boolean> {
     if (DEBUG) {
       printDebugOutput(result);
     }
-    return true;
+    return result;
   }
 
   return handleRecovery(result, answers);
 }
 
+async function runHistory(): Promise<void> {
+  initStorageConfig();
+
+  if (!storageConfig) {
+    console.error('Storage is not enabled. Set PROMPT_STORAGE_ENABLED=1 and DATABASE_URL in your .env file.');
+    process.exit(1);
+  }
+
+  const client = await getStorageClient();
+  if (!client) {
+    console.error('Could not connect to the database. Check your DATABASE_URL and ensure PostgreSQL is running.');
+    process.exit(1);
+  }
+
+  await runHistoryFlow(client, { debug: DEBUG });
+  await client.end();
+}
+
 async function main(): Promise<void> {
+  if (HISTORY_MODE) {
+    await runHistory();
+    return;
+  }
+
   initLlmIfEnabled();
+  initStorageConfig();
   await validateModelsOnStartup();
 
   let running = true;
@@ -153,16 +265,24 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const generated = await runGeneration(answers);
+    const result = await runGeneration(answers);
 
-    if (!generated) {
+    if (!result) {
       continue;
+    }
+
+    if (storageConfig) {
+      await trySavePromptRun(answers, result);
     }
 
     const next = await askPostGeneration();
     if (next === 'exit') {
       running = false;
     }
+  }
+
+  if (storageClient) {
+    await storageClient.end();
   }
 }
 
