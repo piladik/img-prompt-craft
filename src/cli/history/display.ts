@@ -1,5 +1,35 @@
 import type { PromptRunSummary, PromptRunRow } from '../../storage/types.js';
 
+const PROMPT_LINE_WIDTH = 76;
+const PROMPT_INDENT = '  ';
+
+export function wrapText(text: string, maxWidth: number = PROMPT_LINE_WIDTH, indent: string = PROMPT_INDENT): string[] {
+  if (!text) return [`${indent}None`];
+
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  if (words.length === 0) return [`${indent}None`];
+
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    if (current.length === 0) {
+      current = word;
+    } else if (current.length + 1 + word.length <= maxWidth) {
+      current += ' ' + word;
+    } else {
+      lines.push(`${indent}${current}`);
+      current = word;
+    }
+  }
+
+  if (current.length > 0) {
+    lines.push(`${indent}${current}`);
+  }
+
+  return lines;
+}
+
 function formatTimestamp(date: Date): string {
   return date.toLocaleString('en-US', {
     year: 'numeric',
@@ -52,12 +82,16 @@ export function printHistoryDetail(row: PromptRunRow): void {
   console.log(`  Camera / Lens:  ${row.cameraLens}`);
   console.log('─────────────────────────────────────────');
 
-  console.log('\n── Positive Prompt ──────────────────────');
-  console.log(`  ${row.positivePrompt}`);
+  console.log('\n── Full Positive Prompt ─────────────────');
+  for (const line of wrapText(row.positivePrompt)) {
+    console.log(line);
+  }
   console.log('─────────────────────────────────────────');
 
-  console.log('\n── Negative Prompt ──────────────────────');
-  console.log(`  ${row.negativePrompt || 'None'}`);
+  console.log('\n── Full Negative Prompt ─────────────────');
+  for (const line of wrapText(row.negativePrompt)) {
+    console.log(line);
+  }
   console.log('─────────────────────────────────────────');
 
   console.log('\n── Dimensions ──────────────────────────');

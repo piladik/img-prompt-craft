@@ -4,4 +4,5 @@ export {
   printHistoryList,
   printHistoryDetail,
   printHistoryEmpty,
+  wrapText,
 } from './display.js';

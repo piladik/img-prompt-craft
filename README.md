@@ -69,7 +69,7 @@ When prompt storage is enabled, every successful generation is automatically sav
 npm run dev -- --history
 ```
 
-This opens an interactive list of your recent prompt runs. Select one to view the full detail (selections, positive/negative prompts, dimensions, normalization mode). From the detail view, you can go back to the list or exit.
+This opens an interactive list of your recent prompt runs. The list shows a short preview of each prompt for quick scanning. Selecting a record opens a detail view that always displays the **full positive and negative prompts** — never a truncated preview. Long prompts are word-wrapped for readability. From the detail view, you can go back to the list or exit.
 
 #### Setting up PostgreSQL storage
 

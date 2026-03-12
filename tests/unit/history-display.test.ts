@@ -4,6 +4,7 @@ import {
   printHistoryList,
   printHistoryDetail,
   printHistoryEmpty,
+  wrapText,
 } from '../../src/cli/history/index.js';
 import type { PromptRunSummary, PromptRunRow } from '../../src/storage/types.js';
 
@@ -178,5 +179,104 @@ describe('printHistoryEmpty', () => {
 
     expect(output).toContain('No saved prompts yet');
     expect(output).toContain('Generate a prompt first');
+  });
+});
+
+describe('wrapText', () => {
+  it('returns a single line when text fits within maxWidth', () => {
+    const lines = wrapText('short text', 76, '  ');
+    expect(lines).toEqual(['  short text']);
+  });
+
+  it('wraps text at word boundaries when it exceeds maxWidth', () => {
+    const text = 'one two three four five six';
+    const lines = wrapText(text, 15, '  ');
+    for (const line of lines) {
+      expect(line.startsWith('  ')).toBe(true);
+    }
+    const reassembled = lines.map((l) => l.slice(2)).join(' ');
+    expect(reassembled).toBe(text);
+    expect(lines.length).toBeGreaterThan(1);
+  });
+
+  it('keeps a single word longer than maxWidth on its own line', () => {
+    const longWord = 'a'.repeat(100);
+    const lines = wrapText(longWord, 76, '  ');
+    expect(lines).toEqual([`  ${longWord}`]);
+  });
+
+  it('returns "None" for an empty string', () => {
+    expect(wrapText('', 76, '  ')).toEqual(['  None']);
+  });
+
+  it('returns "None" for a whitespace-only string', () => {
+    expect(wrapText('   \t  ', 76, '  ')).toEqual(['  None']);
+  });
+
+  it('preserves every word from the original text', () => {
+    const text = 'masterful cinematic composition, soft golden-hour light, depth of field, dramatic shadows, modern urban architecture';
+    const lines = wrapText(text, 40, '  ');
+    const reassembled = lines.map((l) => l.slice(2)).join(' ');
+    expect(reassembled).toBe(text);
+  });
+});
+
+const LONG_POSITIVE = [
+  'masterful cinematic portrait of a confident young woman',
+  'walking through a rain-soaked modern city street at golden hour,',
+  'soft volumetric light diffusing through scattered clouds,',
+  'shallow depth of field with bokeh highlights on wet pavement,',
+  'dramatic leading lines from converging skyscrapers,',
+  'rich color grading with teal shadows and warm amber highlights,',
+  'ultra-detailed skin texture and natural hair movement,',
+  'wearing a tailored dark blazer with subtle fabric wrinkles,',
+  'environmental reflections in puddles and glass storefronts,',
+  'photorealistic rendering, 8k resolution, professional photography',
+].join(' ');
+
+const LONG_NEGATIVE = [
+  'blurry, out of focus, bad anatomy, distorted face,',
+  'extra limbs, fused fingers, low quality, pixelated,',
+  'watermark, signature, text overlay, cropped frame,',
+  'oversaturated neon colors, flat lighting, plastic skin,',
+  'unrealistic proportions, uncanny valley expression',
+].join(' ');
+
+describe('printHistoryDetail — full prompt visibility', () => {
+  it('shows the full positive prompt with no truncation', () => {
+    printHistoryDetail(sampleRow({ positivePrompt: LONG_POSITIVE }));
+    const output = logged.join('\n');
+
+    for (const word of LONG_POSITIVE.split(/\s+/)) {
+      expect(output).toContain(word);
+    }
+  });
+
+  it('shows the full negative prompt with no truncation', () => {
+    printHistoryDetail(sampleRow({ negativePrompt: LONG_NEGATIVE }));
+    const output = logged.join('\n');
+
+    for (const word of LONG_NEGATIVE.split(/\s+/)) {
+      expect(output).toContain(word);
+    }
+  });
+
+  it('uses "Full Positive Prompt" and "Full Negative Prompt" section labels', () => {
+    printHistoryDetail(sampleRow());
+    const output = logged.join('\n');
+
+    expect(output).toContain('Full Positive Prompt');
+    expect(output).toContain('Full Negative Prompt');
+  });
+
+  it('wraps long positive prompts into multiple output lines', () => {
+    printHistoryDetail(sampleRow({ positivePrompt: LONG_POSITIVE }));
+
+    const promptLines = logged.filter((l) => {
+      const trimmed = l.trim();
+      return trimmed.length > 0 && !trimmed.startsWith('──') && LONG_POSITIVE.split(/\s+/).some((w) => trimmed.includes(w));
+    });
+    const inSection = promptLines.filter((l) => !l.includes(':') || l.trim().includes(','));
+    expect(inSection.length).toBeGreaterThan(1);
   });
 });
