@@ -42,15 +42,12 @@ function sampleRow(overrides?: Partial<PromptRunRow>): PromptRunRow {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
     normalizedBy: 'deterministic',
     positivePrompt: 'A confident young woman walking through a modern city street',
     negativePrompt: 'blurry, bad-anatomy',
-    width: 1344,
-    height: 768,
     llmProvider: null,
     llmModel: null,
     llmWarning: null,
@@ -106,18 +103,69 @@ describe('printHistoryList', () => {
 });
 
 describe('printHistoryDetail', () => {
-  it('prints all selection fields', () => {
+  it('prints required fields and populated optional fields', () => {
     printHistoryDetail(sampleRow());
     const output = logged.join('\n');
 
-    expect(output).toContain('cinematic-realism');
+    expect(output).toContain('image');
     expect(output).toContain('young-woman');
+    expect(output).toContain('cinematic-realism');
     expect(output).toContain('modern-city-street');
     expect(output).toContain('confident');
-    expect(output).toContain('16:9');
     expect(output).toContain('medium-shot');
     expect(output).toContain('golden-hour-sunlight');
     expect(output).toContain('85mm-portrait-lens');
+  });
+
+  it('omits optional fields that are empty strings', () => {
+    printHistoryDetail(sampleRow({
+      style: '',
+      scene: '',
+      mood: '',
+      composition: '',
+      lighting: '',
+      cameraLens: '',
+    }));
+    const output = logged.join('\n');
+
+    expect(output).toContain('image');
+    expect(output).toContain('young-woman');
+    expect(output).not.toContain('Style:');
+    expect(output).not.toContain('Scene:');
+    expect(output).not.toContain('Mood:');
+    expect(output).not.toContain('Composition:');
+    expect(output).not.toContain('Lighting:');
+    expect(output).not.toContain('Camera / Lens:');
+  });
+
+  it('shows only a subset of optional fields when others are empty', () => {
+    printHistoryDetail(sampleRow({
+      style: '',
+      scene: 'forest-clearing',
+      mood: 'peaceful',
+      composition: '',
+      lighting: '',
+      cameraLens: '',
+    }));
+    const output = logged.join('\n');
+
+    expect(output).toContain('Scene:');
+    expect(output).toContain('forest-clearing');
+    expect(output).toContain('Mood:');
+    expect(output).toContain('peaceful');
+    expect(output).not.toContain('Style:');
+    expect(output).not.toContain('Composition:');
+    expect(output).not.toContain('Lighting:');
+    expect(output).not.toContain('Camera / Lens:');
+  });
+
+  it('never shows aspect_ratio, width, or height', () => {
+    printHistoryDetail(sampleRow());
+    const output = logged.join('\n');
+
+    expect(output).not.toMatch(/aspect.?ratio/i);
+    expect(output).not.toMatch(/\bwidth\b/i);
+    expect(output).not.toMatch(/\bheight\b/i);
   });
 
   it('prints positive and negative prompts', () => {
@@ -126,13 +174,6 @@ describe('printHistoryDetail', () => {
 
     expect(output).toContain('A confident young woman walking through a modern city street');
     expect(output).toContain('blurry, bad-anatomy');
-  });
-
-  it('prints dimensions', () => {
-    printHistoryDetail(sampleRow());
-    const output = logged.join('\n');
-
-    expect(output).toContain('1344 × 768');
   });
 
   it('shows "None" when negative prompt is empty', () => {

@@ -4,6 +4,7 @@ import { generatePrompt } from '../../src/normalization/index.js';
 import type { LlmOptions } from '../../src/normalization/index.js';
 import type { LlmClient, LlmConfig } from '../../src/llm/index.js';
 import type { RawAnswers } from '../../src/cli/types.js';
+import { OPTIONAL_FIELD_IDS } from '../../src/cli/optional-fields.js';
 
 const MODELS_DIR = join(import.meta.dirname, '..', '..', 'models');
 
@@ -23,11 +24,11 @@ function makeAnswers(overrides?: Partial<RawAnswers>): RawAnswers {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
     negativePrompt: ['blurry', 'bad-anatomy', 'deformed-hands'],
+    selectedOptionalInputs: [...OPTIONAL_FIELD_IDS],
     ...overrides,
   };
 }
@@ -52,7 +53,7 @@ describe('full pipeline with LLM enabled and successful', () => {
     expect(result.llmWarning).toBeUndefined();
   });
 
-  it('keeps negative prompt, width, and height from deterministic output', async () => {
+  it('keeps negative prompt from deterministic output', async () => {
     const rewritten = 'A confident woman on a sunlit city street captured cinematically.';
     const client = mockClient(async () => rewritten);
     const llmOptions: LlmOptions = { config: llmConfig, client };
@@ -62,8 +63,6 @@ describe('full pipeline with LLM enabled and successful', () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(result.output.negativePrompt).toBe('blurry, bad anatomy, deformed hands');
-    expect(result.output.width).toBe(1344);
-    expect(result.output.height).toBe(768);
   });
 
   it('passes the deterministic prompt to the LLM client', async () => {
@@ -133,8 +132,62 @@ describe('full pipeline with LLM enabled but LLM fails', () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
     expect(result.output.negativePrompt).toBe('blurry, bad anatomy, deformed hands');
-    expect(result.output.width).toBe(1344);
-    expect(result.output.height).toBe(768);
+  });
+});
+
+describe('full pipeline with LLM and minimal answers (required-only)', () => {
+  it('replaces positive prompt even when only required fields are present', async () => {
+    const rewritten = 'A young woman stands in a quiet, contemplative pose.';
+    const client = mockClient(async () => rewritten);
+    const llmOptions: LlmOptions = { config: llmConfig, client };
+
+    const answers: RawAnswers = { type: 'image', model: 'flux', subject: 'young-woman' };
+    const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.normalizedBy).toBe('llm');
+    expect(result.output.positivePrompt).toBe(rewritten);
+    expect(result.output.negativePrompt).toBe('');
+  });
+
+  it('falls back to deterministic on LLM failure with required-only answers', async () => {
+    const client = mockClient(async () => {
+      throw new Error('Service unavailable');
+    });
+    const llmOptions: LlmOptions = { config: llmConfig, client };
+
+    const answers: RawAnswers = { type: 'image', model: 'flux', subject: 'young-woman' };
+    const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.normalizedBy).toBe('deterministic');
+    expect(result.llmWarning).toContain('Service unavailable');
+    expect(result.output.positivePrompt.toLowerCase()).toContain('young woman');
+  });
+});
+
+describe('full pipeline with LLM and partial optionals', () => {
+  it('works with mood + scene only', async () => {
+    const rewritten = 'A mysterious young man on a rooftop at sunset.';
+    const client = mockClient(async () => rewritten);
+    const llmOptions: LlmOptions = { config: llmConfig, client };
+
+    const answers: RawAnswers = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-man',
+      mood: 'mysterious',
+      scene: 'rooftop-at-sunset',
+      selectedOptionalInputs: ['mood', 'scene'],
+    };
+    const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.normalizedBy).toBe('llm');
+    expect(result.output.positivePrompt).toBe(rewritten);
   });
 });
 

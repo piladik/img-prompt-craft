@@ -10,10 +10,6 @@ export function printGenerationResult(result: GenerationSuccess): void {
 
   console.log('\n── Negative Prompt ──────────────────────');
   console.log(`  ${result.output.negativePrompt || 'None'}`);
-  console.log('─────────────────────────────────────────');
-
-  console.log('\n── Dimensions ──────────────────────────');
-  console.log(`  ${result.output.width} × ${result.output.height}`);
   console.log('─────────────────────────────────────────\n');
 
   if (result.llmWarning) {

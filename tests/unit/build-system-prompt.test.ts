@@ -15,7 +15,6 @@ const fluxConfig: ModelConfig = {
   positivePromptTemplate: '{composition} of a {mood} {subject}',
   negativePromptSeparator: ', ',
   defaultNegativePrefix: '',
-  aspectRatioMap: { '1:1': { width: 1024, height: 1024 } },
 };
 
 const baseLlmConfig: LlmConfig = {
@@ -33,7 +32,6 @@ const sampleIntermediate: IntermediatePrompt = {
   subject: 'young-woman',
   scene: 'modern-city-street',
   mood: 'confident',
-  aspectRatio: '16:9',
   composition: 'medium-shot',
   lighting: 'golden-hour-sunlight',
   cameraLens: '85mm-portrait-lens',
@@ -133,12 +131,10 @@ describe('buildUserPrompt', () => {
     expect(result2).toContain('- Subject: young-man');
   });
 
-  it('does not include negative prompt or aspect ratio', () => {
+  it('does not include negative prompt in user prompt', () => {
     const result = buildUserPrompt(deterministicPrompt, sampleIntermediate);
 
     expect(result).not.toContain('blurry');
-    expect(result).not.toContain('16:9');
     expect(result).not.toContain('Negative');
-    expect(result).not.toContain('Aspect');
   });
 });

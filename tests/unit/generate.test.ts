@@ -13,7 +13,6 @@ function validRawAnswers(): RawAnswers {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
@@ -30,8 +29,6 @@ describe('generatePrompt pipeline', () => {
       'Medium shot of a confident young woman, modern city street, golden hour sunlight, shot on 85mm portrait lens, cinematic realism',
     );
     expect(result.output.negativePrompt).toBe('blurry, bad anatomy, deformed hands');
-    expect(result.output.width).toBe(1344);
-    expect(result.output.height).toBe(768);
   });
 
   it('returns the validated intermediate schema in the result', async () => {
@@ -45,7 +42,7 @@ describe('generatePrompt pipeline', () => {
   });
 
   it('works with empty negative prompt', async () => {
-    const answers = { ...validRawAnswers(), negativePrompt: [] };
+    const answers = { ...validRawAnswers(), negativePrompt: [] as string[] };
     const result = await generatePrompt(answers, MODELS_DIR);
     expect(result.success).toBe(true);
     if (!result.success) return;
@@ -75,16 +72,13 @@ describe('generatePrompt pipeline', () => {
     }
   });
 
-  it('works with all aspect ratios', async () => {
-    const ratios = ['1:1', '4:5', '3:4', '16:9', '9:16'];
-    for (const aspectRatio of ratios) {
-      const answers = { ...validRawAnswers(), aspectRatio };
-      const result = await generatePrompt(answers, MODELS_DIR);
-      expect(result.success).toBe(true);
-      if (!result.success) continue;
-      expect(result.output.width).toBeGreaterThan(0);
-      expect(result.output.height).toBeGreaterThan(0);
-    }
+  it('succeeds with required-only answers (no optional fields)', async () => {
+    const answers: RawAnswers = { type: 'image', model: 'flux', subject: 'young-woman' };
+    const result = await generatePrompt(answers, MODELS_DIR);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.output.positivePrompt).toBeDefined();
+    expect(result.output.positivePrompt.length).toBeGreaterThan(0);
   });
 
   it('fails at mapping stage for invalid type', async () => {
@@ -113,5 +107,49 @@ describe('generatePrompt pipeline', () => {
     if (result.success) return;
     expect(result.stage).toBe('model-loading');
     expect(result.error).toContain('not found');
+  });
+
+  it('succeeds with partial optional fields (mood + scene only)', async () => {
+    const answers: RawAnswers = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-woman',
+      mood: 'confident',
+      scene: 'modern-city-street',
+    };
+    const result = await generatePrompt(answers, MODELS_DIR);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.output.positivePrompt).toContain('young woman');
+    expect(result.output.positivePrompt).toContain('confident');
+    expect(result.output.positivePrompt).toContain('modern city street');
+  });
+
+  it('returns empty negativePrompt when field is omitted', async () => {
+    const answers: RawAnswers = { type: 'image', model: 'flux', subject: 'young-woman' };
+    const result = await generatePrompt(answers, MODELS_DIR);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.output.negativePrompt).toBe('');
+  });
+
+  it('returns empty negativePrompt when selected but empty array', async () => {
+    const answers: RawAnswers = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-woman',
+      negativePrompt: [],
+    };
+    const result = await generatePrompt(answers, MODELS_DIR);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.output.negativePrompt).toBe('');
+  });
+
+  it('output contains only positivePrompt and negativePrompt', async () => {
+    const result = await generatePrompt(validRawAnswers(), MODELS_DIR);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(Object.keys(result.output).sort()).toEqual(['negativePrompt', 'positivePrompt']);
   });
 });

@@ -20,31 +20,25 @@ export function adaptToModel(
   config: ModelConfig,
 ): NormalizedOutput {
   const vars: Record<string, string> = {
-    style: humanize(intermediate.style),
+    style: humanize(intermediate.style ?? ''),
     subject: humanize(intermediate.subject),
-    scene: humanize(intermediate.scene),
-    mood: humanize(intermediate.mood),
-    composition: capitalize(humanize(intermediate.composition)),
-    lighting: humanize(intermediate.lighting),
-    cameraLens: humanize(intermediate.cameraLens),
+    scene: humanize(intermediate.scene ?? ''),
+    mood: humanize(intermediate.mood ?? ''),
+    composition: capitalize(humanize(intermediate.composition ?? '')),
+    lighting: humanize(intermediate.lighting ?? ''),
+    cameraLens: humanize(intermediate.cameraLens ?? ''),
   };
 
   const positivePrompt = fillTemplate(config.positivePromptTemplate, vars);
 
-  const negativeItems = intermediate.negativePrompt.map(humanize);
+  const negativeItems = (intermediate.negativePrompt ?? []).map(humanize);
   const negativePrompt =
     negativeItems.length > 0
       ? config.defaultNegativePrefix + negativeItems.join(config.negativePromptSeparator)
       : '';
 
-  const dimensions = config.aspectRatioMap[intermediate.aspectRatio];
-  const width = dimensions?.width ?? 1024;
-  const height = dimensions?.height ?? 1024;
-
   return {
     positivePrompt,
     negativePrompt,
-    width,
-    height,
   };
 }

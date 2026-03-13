@@ -6,7 +6,6 @@ export { styleOptions } from './style-options.js';
 export { subjectOptions } from './subject-options.js';
 export { sceneOptions } from './scene-options.js';
 export { moodOptions } from './mood-options.js';
-export { aspectRatioOptions } from './aspect-ratio-options.js';
 export { compositionOptions } from './composition-options.js';
 export { lightingOptions } from './lighting-options.js';
 export { cameraLensOptions } from './camera-lens-options.js';

@@ -14,11 +14,11 @@ function validAnswers(): RawAnswers {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
     negativePrompt: ['blurry'],
+    selectedOptionalInputs: ['style', 'scene', 'mood', 'composition', 'lighting', 'cameraLens', 'negativePrompt'],
   };
 }
 
@@ -80,6 +80,32 @@ describe('error: missing model config file', () => {
     if (result.success) return;
     expect(result.error).toContain('not found');
     expect(result.error).toContain('nonexistent-model');
+  });
+});
+
+describe('error: invalid optional field with partial answers', () => {
+  it('fails at mapping stage with invalid style on partial answers', async () => {
+    const result = await generatePrompt(
+      {
+        type: 'image',
+        model: 'flux',
+        subject: 'young-woman',
+        style: 'watercolor',
+        selectedOptionalInputs: ['style'],
+      },
+      MODELS_DIR,
+    );
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.stage).toBe('mapping');
+  });
+
+  it('succeeds with required-only answers (no optional fields)', async () => {
+    const result = await generatePrompt(
+      { type: 'image', model: 'flux', subject: 'young-woman' },
+      MODELS_DIR,
+    );
+    expect(result.success).toBe(true);
   });
 });
 

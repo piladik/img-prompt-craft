@@ -12,13 +12,6 @@ const fluxConfig: ModelConfig = {
     '{composition} of a {mood} {subject}, {scene}, {lighting}, shot on {cameraLens}, {style}',
   negativePromptSeparator: ', ',
   defaultNegativePrefix: '',
-  aspectRatioMap: {
-    '1:1': { width: 1024, height: 1024 },
-    '4:5': { width: 896, height: 1120 },
-    '3:4': { width: 896, height: 1152 },
-    '16:9': { width: 1344, height: 768 },
-    '9:16': { width: 768, height: 1344 },
-  },
 };
 
 function makeIntermediate(overrides?: Partial<IntermediatePrompt>): IntermediatePrompt {
@@ -29,7 +22,6 @@ function makeIntermediate(overrides?: Partial<IntermediatePrompt>): Intermediate
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
@@ -51,24 +43,6 @@ describe('adaptToModel (Flux)', () => {
   it('produces a negative prompt joined by the model separator', () => {
     const result = adaptToModel(makeIntermediate(), fluxConfig);
     expect(result.negativePrompt).toBe('blurry, bad anatomy, deformed hands');
-  });
-
-  it('resolves 16:9 aspect ratio to correct pixel dimensions', () => {
-    const result = adaptToModel(makeIntermediate(), fluxConfig);
-    expect(result.width).toBe(1344);
-    expect(result.height).toBe(768);
-  });
-
-  it('resolves 1:1 aspect ratio', () => {
-    const result = adaptToModel(makeIntermediate({ aspectRatio: '1:1' }), fluxConfig);
-    expect(result.width).toBe(1024);
-    expect(result.height).toBe(1024);
-  });
-
-  it('resolves 9:16 aspect ratio', () => {
-    const result = adaptToModel(makeIntermediate({ aspectRatio: '9:16' }), fluxConfig);
-    expect(result.width).toBe(768);
-    expect(result.height).toBe(1344);
   });
 
   it('returns empty string for negative prompt when no items selected', () => {
@@ -96,14 +70,6 @@ describe('adaptToModel (Flux)', () => {
       fluxConfig,
     );
     expect(result.positivePrompt).toMatch(/^Close up portrait/);
-  });
-
-  it('falls back to 1024x1024 for unknown aspect ratio', () => {
-    const custom = makeIntermediate();
-    (custom as Record<string, unknown>).aspectRatio = 'unknown';
-    const result = adaptToModel(custom as IntermediatePrompt, fluxConfig);
-    expect(result.width).toBe(1024);
-    expect(result.height).toBe(1024);
   });
 
   it('works with young-man subject', () => {
@@ -165,6 +131,76 @@ describe('adaptToModel with custom config', () => {
       defaultNegativePrefix: 'worst quality, ',
     };
     const result = adaptToModel(makeIntermediate({ negativePrompt: [] }), customConfig);
+    expect(result.negativePrompt).toBe('');
+  });
+});
+
+describe('adaptToModel with minimal (required-only) input', () => {
+  const minimalIntermediate: IntermediatePrompt = {
+    type: 'image',
+    model: 'flux',
+    subject: 'young-woman',
+    promptIntent: 'portrait of a young woman',
+    metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+  };
+
+  it('produces a non-empty positive prompt with only required fields', () => {
+    const result = adaptToModel(minimalIntermediate, fluxConfig);
+    expect(result.positivePrompt.length).toBeGreaterThan(0);
+    expect(result.positivePrompt).toContain('young woman');
+  });
+
+  it('returns empty negative prompt when negativePrompt is omitted', () => {
+    const result = adaptToModel(minimalIntermediate, fluxConfig);
+    expect(result.negativePrompt).toBe('');
+  });
+
+  it('output has only positivePrompt and negativePrompt', () => {
+    const result = adaptToModel(minimalIntermediate, fluxConfig);
+    expect(Object.keys(result).sort()).toEqual(['negativePrompt', 'positivePrompt']);
+  });
+});
+
+describe('adaptToModel with partial optional fields', () => {
+  it('handles mood + scene only', () => {
+    const partial: IntermediatePrompt = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-woman',
+      mood: 'confident',
+      scene: 'modern-city-street',
+      promptIntent: 'confident young woman on a city street',
+      metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+    };
+    const result = adaptToModel(partial, fluxConfig);
+    expect(result.positivePrompt).toContain('confident');
+    expect(result.positivePrompt).toContain('modern city street');
+    expect(result.positivePrompt).toContain('young woman');
+  });
+
+  it('negativePrompt omitted produces empty string', () => {
+    const partial: IntermediatePrompt = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-man',
+      style: 'cinematic-realism',
+      promptIntent: 'cinematic portrait of a young man',
+      metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+    };
+    const result = adaptToModel(partial, fluxConfig);
+    expect(result.negativePrompt).toBe('');
+  });
+
+  it('negativePrompt selected but empty array produces empty string', () => {
+    const partial: IntermediatePrompt = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-woman',
+      negativePrompt: [],
+      promptIntent: 'portrait of a young woman',
+      metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+    };
+    const result = adaptToModel(partial, fluxConfig);
     expect(result.negativePrompt).toBe('');
   });
 });

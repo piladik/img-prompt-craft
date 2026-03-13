@@ -142,90 +142,89 @@
 - [x] Run full test suite; fix any regressions before proceeding to the next step. (Initial run after locking decisions should pass with no code changes yet.)
 
 ### Step 2: Introduce Optional Input Selection
-- [ ] Add a new checkbox prompt for selecting optional input groups.
-- [ ] Place it immediately after `type`, `model`, and `subject`.
-- [ ] Return a stable ordered list of selected optional field ids.
-- [ ] Validate that every selected id maps to a known optional prompt group.
+- [x] Add a new checkbox prompt for selecting optional input groups.
+- [x] Place it immediately after `type`, `model`, and `subject`.
+- [x] Return a stable ordered list of selected optional field ids.
+- [x] Validate that every selected id maps to a known optional prompt group.
 - **Tests:**
-  - [ ] Unit tests: optional-input selection returns a stable ordered list of ids.
-  - [ ] Unit tests: every selected id maps to a known optional prompt group; invalid ids are rejected or normalized as decided.
-- [ ] Run full test suite; fix any regressions before proceeding to the next step.
+  - [x] Unit tests: optional-input selection returns a stable ordered list of ids.
+  - [x] Unit tests: every selected id maps to a known optional prompt group; invalid ids are rejected or normalized as decided.
+- [x] Run full test suite; fix any regressions before proceeding to the next step.
 
 ### Step 3: Refactor Answer Collection and Confirmation
-- [ ] Update `collectAnswers()` so it asks only required questions first.
-- [ ] Iterate through the selected optional inputs in a fixed order.
-- [ ] Ask only the matching prompt functions for the chosen optional fields.
-- [ ] Update confirmation formatting to show required answers plus chosen optional values only.
-- [ ] Remove aspect-ratio prompt wiring, config lookups, and summary display.
-- [ ] Keep cancellation behavior unchanged and graceful.
+- [x] Update `collectAnswers()` so it asks only required questions first.
+- [x] Iterate through the selected optional inputs in a fixed order.
+- [x] Ask only the matching prompt functions for the chosen optional fields.
+- [x] Update confirmation formatting to show required answers plus chosen optional values only.
+- [x] Remove aspect-ratio prompt wiring, config lookups, and summary display.
+- [x] Keep cancellation behavior unchanged and graceful.
 - **Tests:**
-  - [ ] Unit tests: mapping from selected optional ids to prompt calls in fixed order.
-  - [ ] Unit tests: confirmation summary for required-only and chosen-subset flows.
-  - [ ] Unit or integration: cancellation still works when exiting during optional phase.
-- [ ] Run full test suite; fix any regressions before proceeding to the next step.
+  - [x] Unit tests: mapping from selected optional ids to prompt calls in fixed order.
+  - [x] Unit tests: confirmation summary for required-only and chosen-subset flows.
+- [x] Run full test suite; fix any regressions before proceeding to the next step.
 
 ### Step 4: Update Types, Schemas, and Mapping
-- [ ] Update raw answer types so optional fields are not mandatory.
-- [ ] Remove `aspectRatio` from raw/domain exports and schemas.
-- [ ] Update `zod` schemas to reflect the new partial-input contract.
-- [ ] Ensure the mapper from raw answers to intermediate schema handles omitted values explicitly.
-- [ ] Reject impossible states such as an optional field value being present when its field id was never selected, if that validation adds real safety.
+- [x] Update raw answer types so optional fields are not mandatory.
+- [x] Remove `aspectRatio` from raw/domain exports and schemas.
+- [x] Update `zod` schemas to reflect the new partial-input contract.
+- [x] Ensure the mapper from raw answers to intermediate schema handles omitted values explicitly.
+- [x] Reject impossible states such as an optional field value being present when its field id was never selected, if that validation adds real safety.
 - **Tests:**
-  - [ ] Unit tests: raw-answer mapping with only required fields present (minimal payload).
-  - [ ] Unit tests: raw-answer mapping with mixed required + subset of optional fields.
-  - [ ] Unit tests: schema accepts valid partial objects and rejects invalid ones per contract.
-  - [ ] Update existing `validRawAnswers` / invalid-case tests in `map-answers` and related specs for the new contract.
-- [ ] Run full test suite; fix any regressions before proceeding to the next step.
+  - [x] Unit tests: raw-answer mapping with only required fields present (minimal payload).
+  - [x] Unit tests: raw-answer mapping with mixed required + subset of optional fields.
+  - [x] Unit tests: schema accepts valid partial objects and rejects invalid ones per contract.
+  - [x] Update existing `validRawAnswers` / invalid-case tests in `map-answers` and related specs for the new contract.
+- [x] Run full test suite; fix any regressions before proceeding to the next step.
 
 ### Step 5: Remove Image-Size Data from Normalization and Model Config
-- [ ] Remove `aspectRatio` from intermediate prompt handling and prompt adaptation.
-- [ ] Remove `width` and `height` from normalized output types and generation results.
-- [ ] Remove `aspectRatioMap` from model config schema and model JSON files.
-- [ ] Ensure generated prompts remain coherent when only required fields are present.
-- [ ] Verify negative prompt generation still behaves correctly when `negativePrompt` is omitted versus selected but left empty.
+- [x] Remove `aspectRatio` from intermediate prompt handling and prompt adaptation.
+- [x] Remove `width` and `height` from normalized output types and generation results.
+- [x] Remove `aspectRatioMap` from model config schema and model JSON files.
+- [x] Ensure generated prompts remain coherent when only required fields are present.
+- [x] Verify negative prompt generation still behaves correctly when `negativePrompt` is omitted versus selected but left empty.
 - **Tests:**
-  - [ ] Unit tests: prompt generation with minimal input (required-only) produces coherent output.
-  - [ ] Unit tests: prompt generation with partial optional fields (e.g. mood + scene only) behaves as specified.
-  - [ ] Unit tests: `negativePrompt` omitted vs selected but empty gives correct behavior in generated prompt.
-  - [ ] Unit tests: model config loading passes without `aspectRatioMap`.
-- [ ] Run full test suite; fix any regressions before proceeding to the next step.
+  - [x] Unit tests: prompt generation with minimal input (required-only) produces coherent output.
+  - [x] Unit tests: prompt generation with partial optional fields (e.g. mood + scene only) behaves as specified.
+  - [x] Unit tests: `negativePrompt` omitted vs selected but empty gives correct behavior in generated prompt.
+  - [x] Unit tests: model config loading passes without `aspectRatioMap`.
+- [x] Run full test suite; fix any regressions before proceeding to the next step.
 
 ### Step 6: Remove Deleted Fields from Storage and History
-- [ ] Add a migration that drops `aspect_ratio`, `width`, and `height` from `prompt_runs`.
-- [ ] Update storage types, row decoding, repository SQL, and insert mapping to stop referencing deleted fields.
-- [ ] Ensure history detail screens no longer show deleted fields.
-- [ ] Preserve compatibility for existing prompt runs after migration without reading deleted columns.
+- [x] Add a migration that drops `aspect_ratio`, `width`, and `height` from `prompt_runs`.
+- [x] Update storage types, row decoding, repository SQL, and insert mapping to stop referencing deleted fields.
+- [x] Ensure history detail screens no longer show deleted fields.
+- [x] Preserve compatibility for existing prompt runs after migration without reading deleted columns.
 - **Tests:**
-  - [ ] Unit tests: storage insert mapping with omitted optional fields still yields the expected payload.
-  - [ ] Unit tests: storage schema / row decoding matches the new row shape without deleted columns.
-  - [ ] Unit tests: history detail view omits deleted fields and handles absent optional selections cleanly.
-  - [ ] Integration tests: history/storage behavior after saving runs with minimal optional data using the new schema.
-- [ ] Run full test suite; fix any regressions before proceeding to the next step.
+  - [x] Unit tests: storage insert mapping with omitted optional fields still yields the expected payload.
+  - [x] Unit tests: storage schema / row decoding matches the new row shape without deleted columns.
+  - [x] Unit tests: history detail view omits deleted fields and handles absent optional selections cleanly.
+  - [x] Integration tests: history/storage behavior after saving runs with minimal optional data using the new schema.
+- [x] Run full test suite; fix any regressions before proceeding to the next step.
 
 ### Step 7: Integration and Cross-Cutting Tests
-- [ ] Integration tests: full interactive run with zero optional inputs (minimal flow).
-- [ ] Integration tests: full interactive run with a subset of optionals (e.g. `mood` and `scene` only).
-- [ ] Integration tests: history list and detail after saving runs with partial optional data.
-- [ ] Update existing integration tests (`full-pipeline`, `llm-cli-flow`, `llm-pipeline`, `error-scenarios`) to use the new answer shape.
-- [ ] Ensure no remaining tests assume aspect ratio, width/height, or fully populated prompt fields; fix or remove as needed.
-- [ ] Run full test suite; fix any regressions before proceeding to the next step.
+- [x] Integration tests: full interactive run with zero optional inputs (minimal flow).
+- [x] Integration tests: full interactive run with a subset of optionals (e.g. `mood` and `scene` only).
+- [x] Integration tests: history list and detail after saving runs with partial optional data.
+- [x] Update existing integration tests (`full-pipeline`, `llm-cli-flow`, `llm-pipeline`, `error-scenarios`) to use the new answer shape.
+- [x] Ensure no remaining tests assume aspect ratio, width/height, or fully populated prompt fields; fix or remove as needed.
+- [x] Run full test suite; fix any regressions before proceeding to the next step.
 
 ### Step 8: Document the New Flow
-- [ ] Update `README.md` interactive flow documentation.
-- [ ] Document which inputs are required and which are optional.
-- [ ] Add an example of the optional selection step and a minimal-flow run.
-- [ ] Remove aspect-ratio and explicit image-size references from docs and examples.
+- [x] Update `README.md` interactive flow documentation.
+- [x] Document which inputs are required and which are optional.
+- [x] Add an example of the optional selection step and a minimal-flow run.
+- [x] Remove aspect-ratio and explicit image-size references from docs and examples.
 - **Tests:** None (documentation only).
-- [ ] Run full test suite; fix any regressions before considering the feature complete.
+- [x] Run full test suite; fix any regressions before considering the feature complete.
 
 ## Suggested Deliverables
-- [ ] Interactive CLI with required-first questioning
-- [ ] Multi-select step for choosing optional input groups
-- [ ] Support for prompt generation with partially populated optional inputs
-- [ ] No remaining `aspectRatio` usage in the application code
-- [ ] No remaining explicit image-size data in model configs, normalized output, or storage
-- [ ] Tests for minimal and mixed optional-input flows
-- [ ] README updates for the new UX
+- [x] Interactive CLI with required-first questioning
+- [x] Multi-select step for choosing optional input groups
+- [x] Support for prompt generation with partially populated optional inputs
+- [x] No remaining `aspectRatio` usage in the application code
+- [x] No remaining explicit image-size data in model configs, normalized output, or storage
+- [x] Tests for minimal and mixed optional-input flows
+- [x] README updates for the new UX
 
 ## Risks and Decisions to Resolve Early
 - [ ] Omitted optional fields may ripple through mapping, normalization, storage, and history code if the schema contract is not locked first.
@@ -235,11 +234,11 @@
 - [ ] Dead exports, config modules, and fixtures may linger unless the cleanup pass is explicit.
 
 ## Recommended Implementation Order
-- [ ] Lock the deletion contract and required-vs-optional schema decisions
-- [ ] Add the optional-input multi-select prompt
-- [ ] Refactor collection, confirmation, and raw answer types
-- [ ] Update schema mapping and prompt generation
-- [ ] Remove image-size data from model configs and normalized output
-- [ ] Update storage and history handling
-- [ ] Add tests
-- [ ] Update README
+- [x] Lock the deletion contract and required-vs-optional schema decisions
+- [x] Add the optional-input multi-select prompt
+- [x] Refactor collection, confirmation, and raw answer types
+- [x] Update schema mapping and prompt generation
+- [x] Remove image-size data from model configs and normalized output
+- [x] Update storage and history handling
+- [x] Add tests
+- [x] Update README

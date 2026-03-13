@@ -5,6 +5,7 @@ import type { LlmOptions } from '../../src/normalization/index.js';
 import { loadLlmConfig, createLlmClient } from '../../src/llm/index.js';
 import type { LlmClient, LlmConfig } from '../../src/llm/index.js';
 import type { RawAnswers } from '../../src/cli/types.js';
+import { OPTIONAL_FIELD_IDS } from '../../src/cli/optional-fields.js';
 
 const MODELS_DIR = join(import.meta.dirname, '..', '..', 'models');
 
@@ -16,11 +17,11 @@ function makeAnswers(overrides?: Partial<RawAnswers>): RawAnswers {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
     negativePrompt: ['blurry', 'bad-anatomy', 'deformed-hands'],
+    selectedOptionalInputs: [...OPTIONAL_FIELD_IDS],
     ...overrides,
   };
 }
@@ -46,8 +47,6 @@ describe('CLI flow: --llm with valid API key (mocked)', () => {
     expect(result.normalizedBy).toBe('llm');
     expect(result.output.positivePrompt).toBe(rewritten);
     expect(result.output.negativePrompt).toBe('blurry, bad anatomy, deformed hands');
-    expect(result.output.width).toBe(1344);
-    expect(result.output.height).toBe(768);
   });
 
   it('uses custom model from LLM_MODEL env var', async () => {
@@ -106,7 +105,6 @@ describe('CLI flow: --llm with valid API key (mocked)', () => {
       lighting: 'soft-window-light',
       cameraLens: '50mm-natural-perspective',
       composition: 'close-up-portrait',
-      aspectRatio: '4:5',
     });
 
     const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
@@ -115,8 +113,6 @@ describe('CLI flow: --llm with valid API key (mocked)', () => {
     if (!result.success) return;
     expect(result.normalizedBy).toBe('llm');
     expect(result.output.positivePrompt).toBe(rewritten);
-    expect(result.output.width).toBe(896);
-    expect(result.output.height).toBe(1120);
   });
 });
 
@@ -134,6 +130,53 @@ describe('CLI flow: --llm with missing API key (startup error)', () => {
     expect(configResult.success).toBe(false);
     if (configResult.success) return;
     expect(configResult.error).toContain('OPENROUTER_API_KEY');
+  });
+});
+
+describe('CLI flow: LLM with minimal answers (required-only)', () => {
+  it('generates LLM-enhanced output with only required fields', async () => {
+    const configResult = loadLlmConfig({ OPENROUTER_API_KEY: 'sk-test-key' });
+    expect(configResult.success).toBe(true);
+    if (!configResult.success) return;
+
+    const rewritten = 'A young woman stands alone in soft, natural light.';
+    const client = mockClient(async () => rewritten);
+    const llmOptions: LlmOptions = { config: configResult.config, client };
+
+    const answers: RawAnswers = { type: 'image', model: 'flux', subject: 'young-woman' };
+    const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.normalizedBy).toBe('llm');
+    expect(result.output.positivePrompt).toBe(rewritten);
+  });
+});
+
+describe('CLI flow: LLM with partial optionals (mood + scene)', () => {
+  it('generates LLM-enhanced output with selected optional fields only', async () => {
+    const configResult = loadLlmConfig({ OPENROUTER_API_KEY: 'sk-test-key' });
+    expect(configResult.success).toBe(true);
+    if (!configResult.success) return;
+
+    const rewritten = 'A mysterious young man lingers on a rooftop at sunset.';
+    const client = mockClient(async () => rewritten);
+    const llmOptions: LlmOptions = { config: configResult.config, client };
+
+    const answers: RawAnswers = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-man',
+      mood: 'mysterious',
+      scene: 'rooftop-at-sunset',
+      selectedOptionalInputs: ['mood', 'scene'],
+    };
+    const result = await generatePrompt(answers, MODELS_DIR, llmOptions);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.normalizedBy).toBe('llm');
+    expect(result.output.positivePrompt).toBe(rewritten);
   });
 });
 

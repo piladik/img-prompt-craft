@@ -15,10 +15,14 @@ export interface MapError {
   issues: string[];
 }
 
+function trimIfPresent(value: string | undefined): string | undefined {
+  return value !== undefined ? value.trim() : undefined;
+}
+
 export function mapAnswersToSchema(answers: RawAnswers): MapResult | MapError {
   const promptIntent = buildPromptIntent({
-    style: answers.style,
     subject: answers.subject,
+    style: answers.style,
     scene: answers.scene,
     mood: answers.mood,
     composition: answers.composition,
@@ -26,24 +30,38 @@ export function mapAnswersToSchema(answers: RawAnswers): MapResult | MapError {
     cameraLens: answers.cameraLens,
   });
 
-  const raw = {
+  const raw: Record<string, unknown> = {
     type: answers.type.trim(),
     model: answers.model.trim(),
-    style: answers.style.trim(),
     subject: answers.subject.trim(),
-    scene: answers.scene.trim(),
-    mood: answers.mood.trim(),
-    aspectRatio: answers.aspectRatio.trim(),
-    composition: answers.composition.trim(),
-    lighting: answers.lighting.trim(),
-    cameraLens: answers.cameraLens.trim(),
-    negativePrompt: answers.negativePrompt.map((v) => v.trim()),
     promptIntent,
     metadata: {
       createdAt: new Date().toISOString(),
       appVersion: APP_VERSION,
     },
   };
+
+  const style = trimIfPresent(answers.style);
+  if (style !== undefined) raw.style = style;
+
+  const scene = trimIfPresent(answers.scene);
+  if (scene !== undefined) raw.scene = scene;
+
+  const mood = trimIfPresent(answers.mood);
+  if (mood !== undefined) raw.mood = mood;
+
+  const composition = trimIfPresent(answers.composition);
+  if (composition !== undefined) raw.composition = composition;
+
+  const lighting = trimIfPresent(answers.lighting);
+  if (lighting !== undefined) raw.lighting = lighting;
+
+  const cameraLens = trimIfPresent(answers.cameraLens);
+  if (cameraLens !== undefined) raw.cameraLens = cameraLens;
+
+  if (answers.negativePrompt !== undefined) {
+    raw.negativePrompt = answers.negativePrompt.map((v) => v.trim());
+  }
 
   const result = intermediatePromptSchema.safeParse(raw);
 

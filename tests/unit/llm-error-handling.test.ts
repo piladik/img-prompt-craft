@@ -15,7 +15,6 @@ const fluxConfig: ModelConfig = {
   positivePromptTemplate: '{composition} of a {mood} {subject}',
   negativePromptSeparator: ', ',
   defaultNegativePrefix: '',
-  aspectRatioMap: { '1:1': { width: 1024, height: 1024 } },
 };
 
 const llmConfig: LlmConfig = {
@@ -33,7 +32,6 @@ const intermediate: IntermediatePrompt = {
   subject: 'young-woman',
   scene: 'modern-city-street',
   mood: 'confident',
-  aspectRatio: '16:9',
   composition: 'medium-shot',
   lighting: 'golden-hour-sunlight',
   cameraLens: '85mm-portrait-lens',

@@ -4,3 +4,10 @@ export { askConfirmation, askPostGeneration, formatSummary } from './confirmatio
 export { printGenerationResult, printDebugOutput, printGenerationError } from './display.js';
 export { askRecoveryAction } from './recovery.js';
 export type { RecoveryAction } from './recovery.js';
+export type { OptionalFieldId, OptionalFieldDefinition } from './optional-fields.js';
+export {
+  OPTIONAL_FIELD_IDS,
+  OPTIONAL_FIELDS,
+  isOptionalFieldId,
+  validateAndOrderOptionalFields,
+} from './optional-fields.js';

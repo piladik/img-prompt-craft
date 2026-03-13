@@ -39,18 +39,16 @@ export async function savePromptRun(
   const sql = `
     INSERT INTO prompt_runs (
       type, model, style, subject, scene, mood,
-      aspect_ratio, composition, lighting, camera_lens,
+      composition, lighting, camera_lens,
       normalized_by, positive_prompt, negative_prompt,
-      width, height,
       llm_provider, llm_model, llm_warning,
       app_version, storage_version
     ) VALUES (
       $1, $2, $3, $4, $5, $6,
-      $7, $8, $9, $10,
-      $11, $12, $13,
-      $14, $15,
-      $16, $17, $18,
-      $19, $20
+      $7, $8, $9,
+      $10, $11, $12,
+      $13, $14, $15,
+      $16, $17
     ) RETURNING *
   `;
 
@@ -61,15 +59,12 @@ export async function savePromptRun(
     insert.subject,
     insert.scene,
     insert.mood,
-    insert.aspectRatio,
     insert.composition,
     insert.lighting,
     insert.cameraLens,
     insert.normalizedBy,
     insert.positivePrompt,
     insert.negativePrompt,
-    insert.width,
-    insert.height,
     insert.llmProvider,
     insert.llmModel,
     insert.llmWarning,

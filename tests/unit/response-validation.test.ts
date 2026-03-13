@@ -9,7 +9,6 @@ const baseIntermediate: IntermediatePrompt = {
   subject: 'young-woman',
   scene: 'modern-city-street',
   mood: 'confident',
-  aspectRatio: '16:9',
   composition: 'medium-shot',
   lighting: 'golden-hour-sunlight',
   cameraLens: '85mm-portrait-lens',

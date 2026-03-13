@@ -11,6 +11,7 @@ Files to change or reference when implementing the optional input selection flow
 | `src/cli/collect-answers.ts` | Refactor to ask required (type, model, subject) first, then run optional-input multi-select, then ask only the selected optional questions in fixed order. |
 | `src/cli/prompts.ts` | Add a checkbox-style multi-select prompt that returns the list of selected optional field ids (style, scene, mood, composition, lighting, cameraLens, negativePrompt). |
 | `src/cli/types.ts` | Make optional fields optional on `RawAnswers`; remove `aspectRatio`; add a type for the optional-input selection result (e.g. `selectedOptionalInputs`). |
+| `src/cli/optional-fields.ts` | Canonical optional field ids, definitions, type guard, and stable-order validation function. Added in Step 2. |
 | `src/cli/confirmation.ts` | Update `formatSummary` and confirmation UX to show required answers and only the chosen optional categories/values; remove `aspectRatio` from the summary and lookup contract. |
 | `src/domain/schema.ts` | Make optional prompt-refinement fields optional on `intermediatePromptSchema`; remove `aspectRatio` completely from the domain schema. |
 | `src/domain/map-answers.ts` | Map from partial `RawAnswers` (only required + selected optional) to intermediate schema; handle omitted optional fields explicitly and remove all `aspectRatio` handling. |
@@ -24,12 +25,15 @@ Files to change or reference when implementing the optional input selection flow
 | `src/storage/types.ts` | Remove `aspectRatio`, `width`, and `height` from `PromptRunInsert` and `PromptRunRow`; keep optional prompt refinements aligned with the new contract. |
 | `src/storage/mappers.ts` | Map omitted optional fields from answers to the insert payload without any deleted-field references. |
 | `src/storage/schema.ts` | Decode DB rows using the new row shape without `aspect_ratio`, `width`, or `height`. |
-| `src/storage/migrations/` | Add migration to drop `aspect_ratio`, `width`, and `height` from `prompt_runs`; adjust schema setup accordingly. |
+| `src/storage/migrations/001_create_prompt_runs.sql` | Updated to remove `aspect_ratio`, `width`, and `height` from the CREATE TABLE definition for fresh installs. |
+| `src/storage/migrations/002_drop_image_size_fields.sql` | New migration to drop `aspect_ratio`, `width`, and `height` from existing `prompt_runs` tables. Added in Step 6. |
 | `src/storage/repositories/prompt-runs.ts` | INSERT must accept null for optional columns; parameter list and types already driven by `PromptRunInsert`. |
 | `src/cli/history/display.ts` | Remove deleted fields from detail output and display absent optional selections cleanly. |
 | `src/config/aspect-ratio-options.ts` | Delete the obsolete aspect-ratio preset module. |
 | `src/config/index.ts` | Remove aspect-ratio exports and keep shared option exports aligned with the new flow. |
 | `src/index.ts` | Remove aspect-ratio lookup wiring and any assumptions that normalized results contain dimensions. |
+| `tests/unit/optional-fields.test.ts` | Unit tests for optional field definitions, type guard, validation, and stable ordering. Added in Step 2. |
+| `tests/unit/collect-answers.test.ts` | Unit tests for optionalPromptMap coverage and stable question order. Added in Step 3. |
 | `tests/unit/map-answers.test.ts` | Cover mapping with only required fields and with mixed required + subset of optional; update `validRawAnswers` and invalid-case tests for new contract. |
 | `tests/unit/format-summary.test.ts` | Cover summary with only required fields and with selected optional fields; ensure omitted optionals are not shown and deleted fields never appear. |
 | `tests/unit/storage-mappers.test.ts` | Cover `mapToPromptRunInsert` with omitted optional fields and no deleted-field payload. |

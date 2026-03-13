@@ -11,15 +11,12 @@ function validDbRow() {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspect_ratio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     camera_lens: '85mm-portrait-lens',
     normalized_by: 'deterministic',
     positive_prompt: 'A confident young woman walking through a modern city street at golden hour',
     negative_prompt: 'blurry, bad-anatomy',
-    width: 1344,
-    height: 768,
     llm_provider: null,
     llm_model: null,
     llm_warning: null,
@@ -36,8 +33,6 @@ describe('decodePromptRunRow', () => {
     expect(row.model).toBe('flux');
     expect(row.normalizedBy).toBe('deterministic');
     expect(row.positivePrompt).toContain('confident young woman');
-    expect(row.width).toBe(1344);
-    expect(row.height).toBe(768);
     expect(row.llmProvider).toBeNull();
     expect(row.appVersion).toBe('0.1.0');
     expect(row.storageVersion).toBe(1);
@@ -83,21 +78,6 @@ describe('decodePromptRunRow', () => {
     expect(() => decodePromptRunRow(raw)).toThrow();
   });
 
-  it('throws on non-positive width', () => {
-    const raw = { ...validDbRow(), width: 0 };
-    expect(() => decodePromptRunRow(raw)).toThrow();
-  });
-
-  it('throws on non-positive height', () => {
-    const raw = { ...validDbRow(), height: -100 };
-    expect(() => decodePromptRunRow(raw)).toThrow();
-  });
-
-  it('throws on non-integer width', () => {
-    const raw = { ...validDbRow(), width: 1344.5 };
-    expect(() => decodePromptRunRow(raw)).toThrow();
-  });
-
   it('throws when positive_prompt is missing', () => {
     const raw = { ...validDbRow(), positive_prompt: undefined };
     expect(() => decodePromptRunRow(raw)).toThrow();
@@ -106,6 +86,34 @@ describe('decodePromptRunRow', () => {
   it('coerces a date string into a Date object', () => {
     const row = decodePromptRunRow(validDbRow());
     expect(row.createdAt).toEqual(new Date('2026-03-09T12:00:00.000Z'));
+  });
+
+  it('does not expose aspect_ratio, width, or height on decoded row', () => {
+    const row = decodePromptRunRow(validDbRow());
+    const keys = Object.keys(row);
+    expect(keys).not.toContain('aspectRatio');
+    expect(keys).not.toContain('aspect_ratio');
+    expect(keys).not.toContain('width');
+    expect(keys).not.toContain('height');
+  });
+
+  it('decodes a row where optional fields are empty strings', () => {
+    const raw = {
+      ...validDbRow(),
+      style: '',
+      scene: '',
+      mood: '',
+      composition: '',
+      lighting: '',
+      camera_lens: '',
+    };
+    const row = decodePromptRunRow(raw);
+    expect(row.style).toBe('');
+    expect(row.scene).toBe('');
+    expect(row.mood).toBe('');
+    expect(row.composition).toBe('');
+    expect(row.lighting).toBe('');
+    expect(row.cameraLens).toBe('');
   });
 });
 

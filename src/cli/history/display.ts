@@ -72,14 +72,23 @@ export function printHistoryDetail(row: PromptRunRow): void {
 
   console.log('\n── Selections ──────────────────────────');
   console.log(`  Type:           ${row.type}`);
-  console.log(`  Style:          ${row.style}`);
   console.log(`  Subject:        ${row.subject}`);
-  console.log(`  Scene:          ${row.scene}`);
-  console.log(`  Mood:           ${row.mood}`);
-  console.log(`  Aspect Ratio:   ${row.aspectRatio}`);
-  console.log(`  Composition:    ${row.composition}`);
-  console.log(`  Lighting:       ${row.lighting}`);
-  console.log(`  Camera / Lens:  ${row.cameraLens}`);
+
+  const optionalSelections: [string, string][] = [
+    ['Style', row.style],
+    ['Scene', row.scene],
+    ['Mood', row.mood],
+    ['Composition', row.composition],
+    ['Lighting', row.lighting],
+    ['Camera / Lens', row.cameraLens],
+  ];
+
+  for (const [label, value] of optionalSelections) {
+    if (value) {
+      console.log(`  ${label}:${' '.repeat(14 - label.length)}${value}`);
+    }
+  }
+
   console.log('─────────────────────────────────────────');
 
   console.log('\n── Full Positive Prompt ─────────────────');
@@ -92,10 +101,6 @@ export function printHistoryDetail(row: PromptRunRow): void {
   for (const line of wrapText(row.negativePrompt)) {
     console.log(line);
   }
-  console.log('─────────────────────────────────────────');
-
-  console.log('\n── Dimensions ──────────────────────────');
-  console.log(`  ${row.width} × ${row.height}`);
   console.log('─────────────────────────────────────────');
 
   if (row.llmWarning) {

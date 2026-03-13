@@ -16,15 +16,12 @@ function validDbRow(overrides?: Record<string, unknown>) {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspect_ratio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     camera_lens: '85mm-portrait-lens',
     normalized_by: 'deterministic',
     positive_prompt: 'A confident young woman',
     negative_prompt: 'blurry',
-    width: 1344,
-    height: 768,
     llm_provider: null,
     llm_model: null,
     llm_warning: null,
@@ -42,15 +39,12 @@ function validInsert(): PromptRunInsert {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
     normalizedBy: 'deterministic',
     positivePrompt: 'A confident young woman',
     negativePrompt: 'blurry',
-    width: 1344,
-    height: 768,
     llmProvider: null,
     llmModel: null,
     llmWarning: null,
@@ -97,12 +91,50 @@ describe('savePromptRun', () => {
     expect(result.error).toBeTruthy();
   });
 
-  it('passes 20 parameters to the query', async () => {
+  it('passes 17 parameters to the query', async () => {
     const client = mockClient({ rows: [validDbRow()] });
     await savePromptRun(client, validInsert());
 
     const callArgs = client.query.mock.calls[0];
-    expect(callArgs[1]).toHaveLength(20);
+    expect(callArgs[1]).toHaveLength(17);
+  });
+
+  it('does not include aspect_ratio, width, or height parameters', async () => {
+    const client = mockClient({ rows: [validDbRow()] });
+    await savePromptRun(client, validInsert());
+
+    const sql: string = client.query.mock.calls[0][0];
+    expect(sql).not.toContain('aspect_ratio');
+    expect(sql).not.toContain('width');
+    expect(sql).not.toContain('height');
+  });
+
+  it('accepts an insert with empty optional fields', async () => {
+    const insert: PromptRunInsert = {
+      ...validInsert(),
+      style: '',
+      scene: '',
+      mood: '',
+      composition: '',
+      lighting: '',
+      cameraLens: '',
+    };
+    const dbRow = {
+      ...validDbRow(),
+      style: '',
+      scene: '',
+      mood: '',
+      composition: '',
+      lighting: '',
+      camera_lens: '',
+    };
+    const client = mockClient({ rows: [dbRow] });
+    const result = await savePromptRun(client, insert);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.style).toBe('');
+    expect(result.data.scene).toBe('');
   });
 });
 
@@ -210,7 +242,7 @@ describe('getPromptRunById', () => {
   });
 
   it('returns error with record id when row decoding fails', async () => {
-    const client = mockClient({ rows: [{ ...validDbRow(), width: -1 }] });
+    const client = mockClient({ rows: [{ ...validDbRow(), normalized_by: 'invalid' }] });
     const result = await getPromptRunById(client, 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 
     expect(result.success).toBe(false);

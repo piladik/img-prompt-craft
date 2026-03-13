@@ -18,7 +18,6 @@ export const sceneSchema = z.enum([
   'minimalist-apartment-interior',
 ]);
 export const moodSchema = z.enum(['confident', 'mysterious', 'relaxed', 'romantic', 'dramatic']);
-export const aspectRatioSchema = z.enum(['1:1', '4:5', '3:4', '16:9', '9:16']);
 export const compositionSchema = z.enum([
   'close-up-portrait',
   'head-and-shoulders-portrait',
@@ -61,15 +60,14 @@ export const metadataSchema = z.object({
 export const intermediatePromptSchema = z.object({
   type: promptTypeSchema,
   model: modelSchema,
-  style: styleSchema,
   subject: subjectSchema,
-  scene: sceneSchema,
-  mood: moodSchema,
-  aspectRatio: aspectRatioSchema,
-  composition: compositionSchema,
-  lighting: lightingSchema,
-  cameraLens: cameraLensSchema,
-  negativePrompt: z.array(negativePromptItemSchema),
+  style: styleSchema.optional(),
+  scene: sceneSchema.optional(),
+  mood: moodSchema.optional(),
+  composition: compositionSchema.optional(),
+  lighting: lightingSchema.optional(),
+  cameraLens: cameraLensSchema.optional(),
+  negativePrompt: z.array(negativePromptItemSchema).optional(),
   promptIntent: z.string().min(1),
   metadata: metadataSchema,
 });
@@ -80,7 +78,6 @@ export type Style = z.infer<typeof styleSchema>;
 export type Subject = z.infer<typeof subjectSchema>;
 export type Scene = z.infer<typeof sceneSchema>;
 export type Mood = z.infer<typeof moodSchema>;
-export type AspectRatio = z.infer<typeof aspectRatioSchema>;
 export type Composition = z.infer<typeof compositionSchema>;
 export type Lighting = z.infer<typeof lightingSchema>;
 export type CameraLens = z.infer<typeof cameraLensSchema>;

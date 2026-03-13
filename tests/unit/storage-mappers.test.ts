@@ -12,7 +12,6 @@ function validAnswers(): RawAnswers {
     subject: 'young-woman',
     scene: 'modern-city-street',
     mood: 'confident',
-    aspectRatio: '16:9',
     composition: 'medium-shot',
     lighting: 'golden-hour-sunlight',
     cameraLens: '85mm-portrait-lens',
@@ -27,8 +26,6 @@ function deterministicResult(): GenerationSuccess {
     output: {
       positivePrompt: 'A confident young woman walking through a modern city street',
       negativePrompt: 'blurry, bad-anatomy',
-      width: 1344,
-      height: 768,
     },
     normalizedBy: 'deterministic',
   };
@@ -69,15 +66,12 @@ describe('mapToPromptRunInsert', () => {
     expect(insert.subject).toBe('young-woman');
     expect(insert.scene).toBe('modern-city-street');
     expect(insert.mood).toBe('confident');
-    expect(insert.aspectRatio).toBe('16:9');
     expect(insert.composition).toBe('medium-shot');
     expect(insert.lighting).toBe('golden-hour-sunlight');
     expect(insert.cameraLens).toBe('85mm-portrait-lens');
     expect(insert.normalizedBy).toBe('deterministic');
     expect(insert.positivePrompt).toContain('confident young woman');
     expect(insert.negativePrompt).toBe('blurry, bad-anatomy');
-    expect(insert.width).toBe(1344);
-    expect(insert.height).toBe(768);
     expect(insert.llmProvider).toBeNull();
     expect(insert.llmModel).toBeNull();
     expect(insert.llmWarning).toBeNull();
@@ -152,5 +146,65 @@ describe('mapToPromptRunInsert', () => {
 
     expect(insert.llmProvider).toBeNull();
     expect(insert.llmModel).toBeNull();
+  });
+
+  it('maps required-only answers with empty strings for omitted optional fields', () => {
+    const answers: RawAnswers = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-woman',
+    };
+    const insert = mapToPromptRunInsert({
+      answers,
+      result: deterministicResult(),
+      appVersion: '0.1.0',
+    });
+
+    expect(insert.type).toBe('image');
+    expect(insert.model).toBe('flux');
+    expect(insert.subject).toBe('young-woman');
+    expect(insert.style).toBe('');
+    expect(insert.scene).toBe('');
+    expect(insert.mood).toBe('');
+    expect(insert.composition).toBe('');
+    expect(insert.lighting).toBe('');
+    expect(insert.cameraLens).toBe('');
+    expect(insert.storageVersion).toBe(1);
+  });
+
+  it('maps a subset of optional fields (mood + scene only)', () => {
+    const answers: RawAnswers = {
+      type: 'image',
+      model: 'flux',
+      subject: 'young-man',
+      mood: 'mysterious',
+      scene: 'rooftop-at-sunset',
+    };
+    const insert = mapToPromptRunInsert({
+      answers,
+      result: deterministicResult(),
+      appVersion: '0.1.0',
+    });
+
+    expect(insert.mood).toBe('mysterious');
+    expect(insert.scene).toBe('rooftop-at-sunset');
+    expect(insert.style).toBe('');
+    expect(insert.composition).toBe('');
+    expect(insert.lighting).toBe('');
+    expect(insert.cameraLens).toBe('');
+  });
+
+  it('does not include aspect_ratio, width, or height in the insert payload', () => {
+    const insert = mapToPromptRunInsert({
+      answers: validAnswers(),
+      result: deterministicResult(),
+      appVersion: '0.1.0',
+    });
+
+    const keys = Object.keys(insert);
+    expect(keys).not.toContain('aspectRatio');
+    expect(keys).not.toContain('aspect_ratio');
+    expect(keys).not.toContain('width');
+    expect(keys).not.toContain('height');
   });
 });

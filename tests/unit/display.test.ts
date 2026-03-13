@@ -24,15 +24,11 @@ afterEach(() => {
 const sampleOutput: NormalizedOutput = {
   positivePrompt: 'Medium shot of a confident young woman',
   negativePrompt: 'blurry, bad anatomy',
-  width: 1344,
-  height: 768,
 };
 
 const sampleOutputEmpty: NormalizedOutput = {
   positivePrompt: 'Close up portrait of a relaxed young man',
   negativePrompt: '',
-  width: 1024,
-  height: 1024,
 };
 
 const sampleIntermediate: IntermediatePrompt = {
@@ -42,7 +38,6 @@ const sampleIntermediate: IntermediatePrompt = {
   subject: 'young-woman',
   scene: 'modern-city-street',
   mood: 'confident',
-  aspectRatio: '16:9',
   composition: 'medium-shot',
   lighting: 'golden-hour-sunlight',
   cameraLens: '85mm-portrait-lens',
@@ -72,12 +67,6 @@ describe('printGenerationResult', () => {
     printGenerationResult(makeSuccess());
     const output = logged.join('\n');
     expect(output).toContain('blurry, bad anatomy');
-  });
-
-  it('prints dimensions', () => {
-    printGenerationResult(makeSuccess());
-    const output = logged.join('\n');
-    expect(output).toContain('1344 × 768');
   });
 
   it('prints None when negative prompt is empty', () => {

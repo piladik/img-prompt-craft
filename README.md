@@ -2,7 +2,7 @@
 
 Interactive CLI for generating structured image prompts for ComfyUI.
 
-The tool guides you through a series of selections — style, subject, scene, mood, composition, lighting, camera lens, and negative prompt — then produces a model-ready positive prompt, negative prompt, and resolution for use in ComfyUI workflows.
+The tool guides you through a small set of **required** selections (type, model, subject), then lets you optionally refine the prompt with **optional inputs** (style, scene, mood, composition, lighting, camera lens, negative prompt). It produces a model-ready positive and negative prompt for use in ComfyUI workflows, without tracking aspect ratios or explicit image dimensions.
 
 ## Requirements
 
@@ -33,7 +33,7 @@ npm start
 
 ### LLM-enhanced mode
 
-Pass `--llm` to enable LLM-powered prompt normalization. The LLM rewrites the deterministic positive prompt into more natural, expressive language optimized for the target image model. The negative prompt, dimensions, and all other outputs are unchanged.
+Pass `--llm` to enable LLM-powered prompt normalization. The LLM rewrites the deterministic positive prompt into more natural, expressive language optimized for the target image model. The negative prompt and all other outputs are unchanged.
 
 ```bash
 npm run dev -- --llm
@@ -101,9 +101,8 @@ Storage never blocks or prevents prompt generation.
 #### What is stored
 
 Each saved prompt run includes:
-- The selections you made (type, model, style, subject, scene, mood, aspect ratio, composition, lighting, camera lens)
+- The selections you made (type, model, subject, and any optional refinements: style, scene, mood, composition, lighting, camera lens)
 - The final positive and negative prompts
-- The output dimensions (width × height)
 - Whether the prompt was generated deterministically or with LLM normalization
 - LLM provider and model (when LLM mode was used)
 - App version and a storage schema version for future migrations
@@ -134,21 +133,52 @@ npm run dev -- --llm --debug
 
 ## Interactive Flow
 
-The CLI asks one question at a time in this order:
+The CLI remains fully interactive and sequential, but now separates **required** inputs from **optional refinements**.
+
+### 1. Required phase
+
+These questions are always asked first:
 
 1. **Type** — `image` (video support planned)
 2. **Model** — `Flux` (more models planned)
-3. **Style** — cinematic realism, fashion editorial, natural lifestyle photography, dark moody portrait, luxury commercial photo
-4. **Subject** — young woman, young man
-5. **Scene** — modern city street, cozy cafe interior, luxury studio backdrop, rooftop at sunset, minimalist apartment interior
-6. **Mood** — confident, mysterious, relaxed, romantic, dramatic
-7. **Aspect ratio** — 1:1, 4:5, 3:4, 16:9, 9:16
-8. **Composition** — close-up portrait, head-and-shoulders portrait, medium shot, full-body shot, candid over-the-shoulder
-9. **Lighting** — soft natural daylight, golden hour sunlight, dramatic studio lighting, neon night lighting, soft window light
-10. **Camera / lens** — 35mm documentary, 50mm natural, 85mm portrait, 24mm environmental, 70-200mm compressed fashion
-11. **Negative prompt** — multi-select from 10 options tuned for realistic human images (optional, press Enter to skip)
+3. **Subject** — young woman, young man
 
-After answering, a confirmation screen shows all selections. You can:
+### 2. Optional selection phase
+
+After the required fields, you are asked which additional inputs you want to refine:
+
+- `style`
+- `scene`
+- `mood`
+- `composition`
+- `lighting`
+- `cameraLens`
+- `negativePrompt`
+
+You can select **none**, a single option, or any combination. This step controls which follow-up questions appear.
+
+### 3. Optional question phase
+
+Only the optional inputs you selected are asked, in a fixed order:
+
+1. **Style** — cinematic realism, fashion editorial, natural lifestyle photography, dark moody portrait, luxury commercial photo
+2. **Scene** — modern city street, cozy cafe interior, luxury studio backdrop, rooftop at sunset, minimalist apartment interior
+3. **Mood** — confident, mysterious, relaxed, romantic, dramatic
+4. **Composition** — close-up portrait, head-and-shoulders portrait, medium shot, full-body shot, candid over-the-shoulder
+5. **Lighting** — soft natural daylight, golden hour sunlight, dramatic studio lighting, neon night lighting, soft window light
+6. **Camera / lens** — 35mm documentary, 50mm natural, 85mm portrait, 24mm environmental, 70-200mm compressed fashion
+7. **Negative prompt** — multi-select from 10 options tuned for realistic human images (optional, press Enter to skip)
+
+If you skip a field in the selection phase, its question is not asked and it is omitted from the final schema and prompts.
+
+### 4. Confirmation and generation
+
+After answering, a confirmation screen shows:
+
+- The required answers (type, model, subject)
+- Only the optional categories you chose, with their current values
+
+You can:
 - **Generate** — run the prompt pipeline
 - **Restart** — start over from the first question
 - **Cancel** — exit without generating
@@ -161,11 +191,12 @@ Given these selections:
 
 | Field | Value |
 |---|---|
+| Type | Image |
+| Model | Flux |
 | Style | Cinematic Realism |
 | Subject | Young Woman |
 | Scene | Modern City Street |
 | Mood | Confident |
-| Aspect Ratio | 16:9 |
 | Composition | Medium Shot |
 | Lighting | Golden Hour Sunlight |
 | Camera / Lens | 85mm Portrait Lens |
@@ -181,10 +212,6 @@ Given these selections:
 ── Negative Prompt ──────────────────────
   blurry, bad anatomy, deformed hands
 ─────────────────────────────────────────
-
-── Dimensions ──────────────────────────
-  1344 × 768
-─────────────────────────────────────────
 ```
 
 ### LLM-enhanced output (`--llm`)
@@ -197,13 +224,9 @@ Given these selections:
 ── Negative Prompt ──────────────────────
   blurry, bad anatomy, deformed hands
 ─────────────────────────────────────────
-
-── Dimensions ──────────────────────────
-  1344 × 768
-─────────────────────────────────────────
 ```
 
-The LLM rewrites the positive prompt into flowing natural language while preserving every detail from the original selections. The negative prompt and dimensions are identical in both modes.
+The LLM rewrites the positive prompt into flowing natural language while preserving every detail from the original selections. The negative prompt is identical in both modes.
 
 ## Project Structure
 
@@ -243,7 +266,6 @@ Each model has a directory under `models/` with a `config.json` file. The config
 | `positivePromptTemplate` | string | Template with `{placeholder}` variables |
 | `negativePromptSeparator` | string | Separator between negative prompt items |
 | `defaultNegativePrefix` | string | Optional prefix prepended to negative prompt |
-| `aspectRatioMap` | object | Maps ratio strings to `{ width, height }` in pixels |
 
 ### Template Placeholders
 
@@ -267,11 +289,7 @@ The positive prompt template supports these placeholders:
   "promptGuidance": "Use natural-language descriptions...",
   "positivePromptTemplate": "{composition} of a {mood} {subject}, {scene}, {lighting}, shot on {cameraLens}, {style}",
   "negativePromptSeparator": ", ",
-  "defaultNegativePrefix": "",
-  "aspectRatioMap": {
-    "1:1": { "width": 1024, "height": 1024 },
-    "16:9": { "width": 1344, "height": 768 }
-  }
+  "defaultNegativePrefix": ""
 }
 ```
 
@@ -333,11 +351,11 @@ The prompt template and separator in `config.json` control how the model's promp
 
 ## Tests
 
-362 tests across 24 test files covering:
+433 tests across 26 test files covering:
 - Preset option lists (counts, duplicates, naming conventions, locked values)
 - Schema validation (valid input, every invalid field, edge cases)
 - Answer-to-schema mapping (trimming, validation errors)
-- Flux adapter (template filling, negative prompt joining, dimensions, custom configs)
+- Flux adapter (template filling, negative prompt joining, prompt-only outputs, custom configs)
 - Model config loading (success, missing files, invalid content)
 - Generation pipeline (end-to-end success, stage-specific failures)
 - Display output (console capture for results, errors, debug, normalization mode)
@@ -354,7 +372,7 @@ The prompt template and separator in `config.json` control how the model's promp
 - Storage insert mapping (deterministic, LLM, provider extraction, fallback)
 - Storage repository (save, list, getById, corrupted-row skipping, mock client)
 - History display formatters (list items, detail view, empty state)
-- Integration tests (every style×subject combo, every option, error scenarios)
+- Integration tests (every style×subject combo, every option, minimal and partial-optional flows, error scenarios)
 
 ## Troubleshooting
 

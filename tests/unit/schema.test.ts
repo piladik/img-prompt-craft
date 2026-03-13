@@ -9,7 +9,6 @@ function validInput() {
     subject: 'young-woman' as const,
     scene: 'modern-city-street' as const,
     mood: 'confident' as const,
-    aspectRatio: '16:9' as const,
     composition: 'medium-shot' as const,
     lighting: 'golden-hour-sunlight' as const,
     cameraLens: '85mm-portrait-lens' as const,
@@ -90,12 +89,6 @@ describe('intermediatePromptSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects unknown aspect ratio value', () => {
-    const input = { ...validInput(), aspectRatio: '21:9' };
-    const result = intermediatePromptSchema.safeParse(input);
-    expect(result.success).toBe(false);
-  });
-
   it('rejects unknown composition value', () => {
     const input = { ...validInput(), composition: 'aerial' };
     const result = intermediatePromptSchema.safeParse(input);
@@ -139,6 +132,42 @@ describe('intermediatePromptSchema', () => {
 
   it('rejects invalid datetime in metadata', () => {
     const input = { ...validInput(), metadata: { createdAt: 'not-a-date', appVersion: '0.1.0' } };
+    const result = intermediatePromptSchema.safeParse(input);
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts input with only required fields (no optional fields)', () => {
+    const input = {
+      type: 'image' as const,
+      model: 'flux' as const,
+      subject: 'young-woman' as const,
+      promptIntent: 'young woman',
+      metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+    };
+    const result = intermediatePromptSchema.safeParse(input);
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts input with a subset of optional fields', () => {
+    const input = {
+      type: 'image' as const,
+      model: 'flux' as const,
+      subject: 'young-man' as const,
+      mood: 'dramatic' as const,
+      scene: 'rooftop-at-sunset' as const,
+      promptIntent: 'dramatic young man on a rooftop at sunset',
+      metadata: { createdAt: '2026-03-09T00:00:00.000Z', appVersion: '0.1.0' },
+    };
+    const result = intermediatePromptSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.mood).toBe('dramatic');
+    expect(result.data.scene).toBe('rooftop-at-sunset');
+    expect(result.data.style).toBeUndefined();
+  });
+
+  it('rejects unknown value in an optional field', () => {
+    const input = { ...validInput(), style: 'impressionist' };
     const result = intermediatePromptSchema.safeParse(input);
     expect(result.success).toBe(false);
   });

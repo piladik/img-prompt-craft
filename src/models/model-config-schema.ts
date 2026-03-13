@@ -10,10 +10,6 @@ export const modelConfigSchema = z.object({
   positivePromptTemplate: z.string().min(1),
   negativePromptSeparator: z.string(),
   defaultNegativePrefix: z.string(),
-  aspectRatioMap: z.record(z.string(), z.object({
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-  })),
 });
 
 export type PromptStrategy = z.infer<typeof promptStrategySchema>;

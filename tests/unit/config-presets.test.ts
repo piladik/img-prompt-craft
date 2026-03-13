@@ -6,7 +6,6 @@ import {
   subjectOptions,
   sceneOptions,
   moodOptions,
-  aspectRatioOptions,
   compositionOptions,
   lightingOptions,
   cameraLensOptions,
@@ -22,7 +21,6 @@ const allGroups: { name: string; options: PresetOption[]; expectedCount: number 
   { name: 'subject', options: subjectOptions, expectedCount: 2 },
   { name: 'scene', options: sceneOptions, expectedCount: 5 },
   { name: 'mood', options: moodOptions, expectedCount: 5 },
-  { name: 'aspectRatio', options: aspectRatioOptions, expectedCount: 5 },
   { name: 'composition', options: compositionOptions, expectedCount: 5 },
   { name: 'lighting', options: lightingOptions, expectedCount: 5 },
   { name: 'cameraLens', options: cameraLensOptions, expectedCount: 5 },
@@ -108,16 +106,6 @@ describe('locked MVP values', () => {
       'relaxed',
       'romantic',
       'dramatic',
-    ]);
-  });
-
-  it('aspect ratio values match roadmap', () => {
-    expect(aspectRatioOptions.map((o) => o.value)).toEqual([
-      '1:1',
-      '4:5',
-      '3:4',
-      '16:9',
-      '9:16',
     ]);
   });
 

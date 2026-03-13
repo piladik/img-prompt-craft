@@ -1,0 +1,4 @@
+ALTER TABLE prompt_runs
+  DROP COLUMN IF EXISTS aspect_ratio,
+  DROP COLUMN IF EXISTS width,
+  DROP COLUMN IF EXISTS height;

@@ -14,28 +14,6 @@ describe('loadModelConfig', () => {
     expect(result.config.promptStrategy).toBe('natural-language');
   });
 
-  it('flux config has all required aspect ratio entries', async () => {
-    const result = await loadModelConfig('flux', MODELS_DIR);
-    expect(result.success).toBe(true);
-    if (!result.success) return;
-    const ratios = Object.keys(result.config.aspectRatioMap);
-    expect(ratios).toContain('1:1');
-    expect(ratios).toContain('4:5');
-    expect(ratios).toContain('3:4');
-    expect(ratios).toContain('16:9');
-    expect(ratios).toContain('9:16');
-  });
-
-  it('flux config aspect ratios have valid dimensions', async () => {
-    const result = await loadModelConfig('flux', MODELS_DIR);
-    expect(result.success).toBe(true);
-    if (!result.success) return;
-    for (const [, dims] of Object.entries(result.config.aspectRatioMap)) {
-      expect(dims.width).toBeGreaterThan(0);
-      expect(dims.height).toBeGreaterThan(0);
-    }
-  });
-
   it('flux config has non-empty prompt guidance', async () => {
     const result = await loadModelConfig('flux', MODELS_DIR);
     expect(result.success).toBe(true);
@@ -75,7 +53,6 @@ describe('modelConfigSchema', () => {
       positivePromptTemplate: '{subject}',
       negativePromptSeparator: ', ',
       defaultNegativePrefix: '',
-      aspectRatioMap: {},
     };
     expect(modelConfigSchema.safeParse(bad).success).toBe(false);
   });
@@ -89,13 +66,12 @@ describe('modelConfigSchema', () => {
       positivePromptTemplate: '{subject}',
       negativePromptSeparator: ', ',
       defaultNegativePrefix: '',
-      aspectRatioMap: {},
     };
     expect(modelConfigSchema.safeParse(bad).success).toBe(false);
   });
 
-  it('rejects config with invalid aspect ratio dimensions', () => {
-    const bad = {
+  it('accepts config without aspectRatioMap', () => {
+    const good = {
       id: 'test',
       label: 'Test',
       promptStrategy: 'natural-language',
@@ -103,9 +79,8 @@ describe('modelConfigSchema', () => {
       positivePromptTemplate: '{subject}',
       negativePromptSeparator: ', ',
       defaultNegativePrefix: '',
-      aspectRatioMap: { '1:1': { width: -1, height: 1024 } },
     };
-    expect(modelConfigSchema.safeParse(bad).success).toBe(false);
+    expect(modelConfigSchema.safeParse(good).success).toBe(true);
   });
 });
 
